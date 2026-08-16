@@ -756,7 +756,12 @@ function photoImg(key, emoji){
 const UMI_SVG='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTAgMTMwIj4KPGVsbGlwc2UgY3g9IjU1IiBjeT0iNzgiIHJ4PSI0MCIgcnk9IjQ2IiBmaWxsPSIjQjQ5QkRCIi8+CjxlbGxpcHNlIGN4PSI1NSIgY3k9Ijg4IiByeD0iMjYiIHJ5PSIzMiIgZmlsbD0iI0Q5Q0NGMCIvPgo8ZWxsaXBzZSBjeD0iMjQiIGN5PSI3MCIgcng9IjEyIiByeT0iMzAiIGZpbGw9IiM5QjdGRDQiIHRyYW5zZm9ybT0icm90YXRlKDE0IDI0IDcwKSIvPgo8ZWxsaXBzZSBjeD0iODYiIGN5PSI3MCIgcng9IjEyIiByeT0iMzAiIGZpbGw9IiM5QjdGRDQiIHRyYW5zZm9ybT0icm90YXRlKC0xNCA4NiA3MCkiLz4KPHBhdGggZD0iTTIyIDM0IEwzNCAxNCBMNDYgMzAgWiIgZmlsbD0iIzlCN0ZENCIvPgo8cGF0aCBkPSJNODggMzQgTDc2IDE0IEw2NCAzMCBaIiBmaWxsPSIjOUI3RkQ0Ii8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNTIiIHI9IjE1IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iNTIiIHI9IjE1IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNTIiIHI9IjciIGZpbGw9IiM1QjQ2MzYiLz4KPGNpcmNsZSBjeD0iNzAiIGN5PSI1MiIgcj0iNyIgZmlsbD0iIzVCNDYzNiIvPgo8Y2lyY2xlIGN4PSI0Mi41IiBjeT0iNDkuNSIgcj0iMi42IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjcyLjUiIGN5PSI0OS41IiByPSIyLjYiIGZpbGw9IiNmZmYiLz4KPHBhdGggZD0iTTU1IDU4IEw0NyA2OCBMNTUgNzQgTDYzIDY4IFoiIGZpbGw9IiNGRkM5NEQiLz4KPHBhdGggZD0iTTQwIDExNiBxNCA2IDggMCBNNDggMTE2IHE0IDYgOCAwIE01NiAxMTYgcTQgNiA4IDAgTTY0IDExNiBxNCA2IDggMCIgc3Ryb2tlPSIjRkZDOTREIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=';
 function initPhotos(){
   if(!window.PHOTOS) return;
-  if(!PHOTOS.umi) document.getElementById('umi').src=UMI_SVG;
+  // веб-версия: фото-набор пуст — остаёмся в эмодзи-режиме, Уми рисуем вектором
+  const hasPhotos = !!(PHOTOS.apple || PHOTOS.umi || PHOTOS.tree);
+  if(!hasPhotos){
+    if(!PHOTOS.umi) document.getElementById('umi').src=UMI_SVG;
+    return;
+  }
   document.body.classList.add('ph');
   const R=document.documentElement.style;
   if(PHOTOS.apple) R.setProperty('--ph-apple','url("'+PHOTOS.apple+'")');
