@@ -170,7 +170,7 @@ body.ph svg.tree-zone{display:none;}
 .flower-src{font-size:76px; cursor:pointer; transition:transform .15s; background:#fff; border:4px solid var(--green); border-radius:28px; padding:8px 14px;}
 .flower-src:active{transform:scale(.9);}
 .flower-src.used{opacity:.3; pointer-events:none;}
-#g3-target{position:absolute; top:110px; width:100%; text-align:center; font-size:30px; font-weight:800;}
+#g3-target{position:absolute; top:146px; width:100%; text-align:center; font-size:30px; font-weight:800;}
 #g3-target b{font-size:44px; color:var(--terra);}
 
 /* ---------- G4 река ---------- */
@@ -190,7 +190,7 @@ body.ph svg.tree-zone{display:none;}
 #g4-label{font-size:26px; font-weight:800; margin-bottom:10px;}
 
 /* ---------- G5 прятки ---------- */
-#g5-scene{position:absolute; inset:95px 0 0 0;}
+#g5-scene{position:absolute; inset:190px 0 0 0;}
 .hidden-digit{
   position:absolute; font-size:56px; font-weight:900; cursor:pointer; opacity:.55; transition:transform .15s, opacity .2s;
   text-shadow:0 1px 2px rgba(255,255,255,.6);
@@ -198,7 +198,7 @@ body.ph svg.tree-zone{display:none;}
 .hidden-digit.found{opacity:1; color:var(--gold); transform:scale(1.4) rotate(-8deg); pointer-events:none; text-shadow:0 0 12px rgba(255,201,77,.9);}
 .hidden-digit.decoy{opacity:.4;}
 .hidden-digit.decoy.tapped{animation:shake .4s;}
-#g5-counter{position:absolute; top:100px; width:100%; text-align:center; font-size:30px; font-weight:800;}
+#g5-counter{position:absolute; top:146px; width:100%; text-align:center; font-size:30px; font-weight:800;}
 
 /* ---------- G6 пазл ---------- */
 #g6-wrap{position:absolute; inset:120px 0 0 0; display:flex; justify-content:center; gap:120px; padding-top:40px;}
@@ -259,7 +259,7 @@ body.ph svg.tree-zone{display:none;}
 .danger{background:#E2543E; box-shadow:0 6px 0 #A63A27;}
 
 /* ---------- Острова 3–5: общие компоненты ---------- */
-.g-body{position:absolute; inset:95px 0 0 0;}
+.g-body{position:absolute; inset:150px 0 0 0;}
 .gx-item{
   position:absolute; font-size:76px; cursor:pointer; transition:transform .15s;
   filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); line-height:1;
@@ -352,7 +352,7 @@ body.ph svg.tree-zone{display:none;}
   #trace-progress-wrap{width:46vw; height:26px;}
 
   /* G3 */
-  #g3-target{font-size:19px; top:72px;}
+  #g3-target{font-size:19px; top:98px;}
   #g3-target b{font-size:30px;}
   #g3-bed{top:130px; gap:12px; flex-wrap:wrap; justify-content:center; padding:0 10px;}
   .hole{width:17vw; height:17vw;}
@@ -369,7 +369,9 @@ body.ph svg.tree-zone{display:none;}
   #g4-target-num{width:96px; height:96px; font-size:56px; border-radius:26px;}
 
   /* G5 */
-  #g5-counter{font-size:19px; top:70px;}
+  #g5-counter{font-size:19px; top:98px;}
+  #g5-scene{inset:136px 0 0 0;}
+  .g-body{inset:104px 0 0 0;}
   .hidden-digit{font-size:11vw;}
 
   /* G6 */
