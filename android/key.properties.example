@@ -1,0 +1,7 @@
+# Шаблон. Скопируйте в android/key.properties и впишите пароль ключа.
+# Файл umi-upload-keystore.jks положите в КОРЕНЬ репозитория
+# (он в .gitignore и в git не попадёт).
+storePassword=ВАШ_ПАРОЛЬ_КЛЮЧА
+keyPassword=ВАШ_ПАРОЛЬ_КЛЮЧА
+keyAlias=umi
+storeFile=../../umi-upload-keystore.jks
