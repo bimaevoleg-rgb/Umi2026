@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Числята: Волшебные острова</title>
+<style>
+:root{
+  --cream:#FFF6E9; --peach:#FFD8B5; --green:#A8D5BA; --terra:#E07856;
+  --gold:#FFC94D; --brown:#8A5A44; --ink:#5B4636;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%; overflow:hidden;}
+body{
+  font-family:'Nunito','Comic Neue','Comic Sans MS',sans-serif;
+  background:var(--cream); color:var(--ink);
+  user-select:none; touch-action:manipulation;
+}
+.screen{display:none; width:100vw; height:100vh; position:relative; overflow:hidden;}
+.screen.active{display:block;}
+h1,h2{font-weight:800;}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed; top:10px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; z-index:50; pointer-events:none;}
+#hud>*{pointer-events:auto;}
+.hud-pill{background:#fff; border:3px solid var(--peach); border-radius:40px; padding:8px 18px; font-size:26px; font-weight:800; box-shadow:0 3px 0 rgba(0,0,0,.08);}
+#btn-mute,#btn-back,#btn-parents,#btn-full{
+  width:72px; height:72px; border-radius:50%; border:3px solid var(--peach); background:#fff;
+  font-size:32px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.08);
+}
+#btn-back{display:none;}
+.hud-right{display:flex; gap:10px; align-items:center;}
+
+/* ---------- Уми ---------- */
+#umi-wrap{position:fixed; left:16px; bottom:14px; z-index:60; display:flex; align-items:flex-end; gap:8px; pointer-events:none;}
+#umi{cursor:pointer; pointer-events:auto;}
+/* анимации тапов по Уми */
+#umi.poke-tickle{animation:umiTickle .5s ease;}
+@keyframes umiTickle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}50%{transform:rotate(7deg)}75%{transform:rotate(-5deg)}}
+#umi.poke-puff{animation:umiPuff .7s ease;}
+@keyframes umiPuff{0%,100%{transform:scale(1)}40%{transform:scale(1.15,1.1)}70%{transform:scale(.95,.97)}}
+#umi.poke-spin{animation:umiSpin .9s ease;}
+@keyframes umiSpin{0%{transform:rotate(0) translateY(0)}30%{transform:rotate(180deg) translateY(-14px)}60%{transform:rotate(360deg) translateY(0)}80%{transform:translateY(-6px) scaleY(.85)}100%{transform:translateY(0)}}
+#umi.poke-prof{animation:umiProf .8s ease;}
+@keyframes umiProf{0%,100%{transform:rotate(0)}30%{transform:rotate(-6deg) translateY(-4px)}60%{transform:rotate(4deg)}}
+#umi.poke-sneeze{animation:umiSneeze .6s ease;}
+@keyframes umiSneeze{0%,100%{transform:scale(1)}30%{transform:scale(.9) rotate(-4deg)}60%{transform:scale(1.12) rotate(3deg)}}
+#umi{width:110px; height:130px; animation:umiBob 3s ease-in-out infinite; object-fit:contain; user-select:none; clip-path:inset(4% 8% 0% 8%);}
+@keyframes umiBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.umi-eyes{animation:blink 4.5s infinite; transform-origin:center;}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+
+/* ---------- Фотореалистичные ассеты (включаются классом body.ph) ---------- */
+img.ph{width:1.1em; height:1.1em; object-fit:contain; display:inline-block; vertical-align:middle; pointer-events:none;}
+.tree-zone{object-fit:contain;}
+body.ph .apple{background:none; background-image:var(--ph-apple); background-size:contain; background-repeat:no-repeat; background-position:center; box-shadow:none; border-radius:0; width:84px; height:84px; filter:drop-shadow(0 0 5px rgba(255,255,255,.95)) drop-shadow(0 3px 4px rgba(0,0,0,.35));}
+body.ph .basket-count{top:auto; bottom:12px; transform:none; height:24px; line-height:24px; font-size:20px;}
+body.ph .basket-apple{width:24px; height:24px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));}
+body.ph .apple:before, body.ph .apple:after{display:none;}
+body.ph .basket-apple{background:none; background-image:var(--ph-apple); background-size:contain; background-repeat:no-repeat; background-position:center; border-radius:0;}
+body.ph #g1-basket{background:none; background-image:var(--ph-basket); background-size:100% 100%; background-repeat:no-repeat; border:none; border-radius:0; filter:drop-shadow(0 6px 6px rgba(0,0,0,.2));}
+body.ph .leaf{background-color:transparent; background-image:var(--ph-leaf); background-size:cover; background-position:center; border-color:transparent; box-shadow:none;}
+#win-star img.ph{width:1em; height:1em;}
+.photo-tree{display:none; pointer-events:none; border:6px solid #fff; border-radius:28px; box-shadow:0 10px 0 rgba(0,0,0,.08); box-sizing:border-box;}
+body.ph .photo-tree{display:block;}
+body.ph svg.tree-zone{display:none;}
+#umi-bubble{
+  background:#fff; border:3px solid var(--peach); border-radius:22px; padding:12px 18px;
+  font-size:24px; font-weight:700; max-width:420px; min-width:180px; min-height:56px;
+  position:relative; box-shadow:0 4px 0 rgba(0,0,0,.07); margin-bottom:60px;
+}
+#umi-bubble:before{content:''; position:absolute; left:-14px; bottom:18px; border:8px solid transparent; border-right:14px solid var(--peach);}
+
+/* ---------- Карта ---------- */
+#map{background:linear-gradient(#BDE3F0 0%, #DFF3E3 55%, #FFF6E9 100%);}
+.map-title{text-align:center; padding-top:70px; font-size:33px; color:var(--brown); text-shadow:0 2px 0 #fff;}
+.islands{position:absolute; inset:0;}
+.island{
+  position:absolute; width:250px; text-align:center; cursor:pointer; transition:transform .2s;
+}
+.island:active{transform:scale(.95);}
+.island .blob{
+  width:230px; height:170px; margin:0 auto; border-radius:48% 52% 55% 45%/55% 48% 52% 45%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border:4px solid rgba(255,255,255,.8); box-shadow:0 8px 0 rgba(0,0,0,.08); position:relative;
+}
+.island .name{font-size:22px; font-weight:800; color:#fff; text-shadow:0 2px 3px rgba(0,0,0,.25);}
+.island .digits{font-size:30px; font-weight:900; color:#fff; text-shadow:0 2px 3px rgba(0,0,0,.25);}
+.island.locked{filter:grayscale(.55) opacity(.75); cursor:pointer;}
+.island .lock{position:absolute; top:8px; right:22px; font-size:34px;}
+.island .need{position:absolute; bottom:8px; font-size:16px; font-weight:800; color:#fff; background:rgba(0,0,0,.25); padding:2px 10px; border-radius:14px;}
+.island .stars-line{margin-top:6px; font-size:20px;}
+.b1{background:linear-gradient(135deg,#8FD19E,#5CB879);} .b2{background:linear-gradient(135deg,#7FC8E8,#4AA3D8);}
+.b3{background:linear-gradient(135deg,#B49BDB,#8A6FC7);} .b4{background:linear-gradient(135deg,#F09B7A,#E07856);}
+.b5{background:linear-gradient(135deg,#7B8FD4,#5560B8);}
+
+/* ---------- Экран острова ---------- */
+.island-screen .games-row{display:flex; gap:30px; justify-content:center; align-items:center; height:100vh; padding:120px 30px 40px;}
+.game-card{
+  width:260px; height:300px; background:#fff; border:4px solid var(--peach); border-radius:36px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.08); transition:transform .15s;
+}
+.game-card:active{transform:scale(.95);}
+.game-card .ico{font-size:76px;}
+.game-card .ttl{font-size:26px; font-weight:800; text-align:center; padding:0 10px;}
+.game-card .st{font-size:24px;}
+.island-head{position:absolute; top:80px; width:100%; text-align:center; font-size:38px; color:var(--brown);}
+
+/* ---------- Игры общее ---------- */
+#game-area{position:absolute; inset:0; padding-top:95px;}
+.game-title{position:absolute; top:96px; width:100%; text-align:center; font-size:34px; font-weight:800; color:var(--brown); z-index:5;}
+.big-btn{
+  font-family:inherit; font-size:30px; font-weight:800; color:#fff; background:var(--terra);
+  border:none; border-radius:30px; padding:18px 42px; cursor:pointer; box-shadow:0 6px 0 #B85B3E;
+}
+.big-btn:active{transform:translateY(4px); box-shadow:0 2px 0 #B85B3E;}
+.num-btn{
+  width:130px; height:130px; border-radius:36px; border:5px solid var(--peach); background:#fff;
+  font-size:64px; font-weight:900; color:var(--brown); cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.09);
+  font-family:inherit; transition:transform .12s;
+}
+.num-btn:active{transform:scale(.93);}
+.num-btn.hint{animation:hintPulse 1s infinite;}
+@keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,77,.9)}50%{box-shadow:0 0 0 16px rgba(255,201,77,.25)}}
+.num-btn.wrong{animation:shake .4s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+
+/* ---------- G1 урожай ---------- */
+#g1 .tree-zone{position:absolute; left:50%; top:110px; transform:translateX(-50%); width:640px; height:480px;}
+.apple{
+  position:absolute; width:64px; height:64px; cursor:pointer; transition:transform .15s;
+  background:radial-gradient(circle at 35% 30%, #FF9D8A, #E2543E 70%);
+  border-radius:50% 50% 46% 54%/56% 56% 44% 44%; box-shadow:inset -4px -6px 0 rgba(0,0,0,.12);
+}
+.apple:before{content:''; position:absolute; top:-8px; left:30px; width:5px; height:12px; background:#7A4A2B; border-radius:3px;}
+.apple:after{content:''; position:absolute; top:-9px; left:36px; width:16px; height:10px; background:#5CB879; border-radius:50% 50% 50% 0;}
+.apple.sway{animation:sway 2.4s ease-in-out infinite;}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.apple.fly{transition:all .55s cubic-bezier(.34,1.3,.64,1); transform:scale(.6) rotate(200deg);}
+#g1-basket{
+  position:absolute; left:50%; bottom:130px; transform:translateX(-50%);
+  width:280px; height:120px; background:linear-gradient(#C98A5B,#A66A3F);
+  border-radius:20px 20px 60px 60px; border:5px solid #8A5A44; overflow:hidden;
+}
+.basket-count{position:absolute; width:100%; text-align:center; top:38px; font-size:36px; font-weight:900; color:#fff; text-shadow:0 2px 2px rgba(0,0,0,.3);}
+.basket-apple{position:absolute; width:34px; height:34px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #FF9D8A, #E2543E 75%);}
+.answers{position:absolute; bottom:20px; width:100%; display:flex; gap:36px; justify-content:center; display:none;}
+.answers.show{display:flex;}
+#round-label{position:fixed; top:14px; left:50%; transform:translateX(-50%); font-size:20px; font-weight:800; background:#fff; border:3px solid var(--peach); border-radius:30px; padding:6px 20px; display:none;}
+
+/* ---------- G2 обведение ---------- */
+#trace-board{
+  position:absolute; left:50%; top:130px; transform:translateX(-50%);
+  background:#E8C89A; border:8px solid #B98A5A; border-radius:36px; box-shadow:inset 0 0 40px rgba(120,80,40,.25);
+}
+#trace-bottom{position:absolute; bottom:30px; width:100%; display:flex; gap:26px; justify-content:center; align-items:center;}
+#trace-progress-wrap{width:340px; height:34px; background:#fff; border:3px solid var(--peach); border-radius:20px; overflow:hidden;}
+#trace-progress{height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#FFB347); transition:width .2s;}
+
+/* ---------- G3 сад ---------- */
+#g3-bed{position:absolute; left:50%; top:170px; transform:translateX(-50%); display:flex; gap:26px;}
+.hole{
+  width:110px; height:110px; border-radius:50%; background:radial-gradient(#8A5A44,#6B4028);
+  box-shadow:inset 0 6px 12px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center;
+}
+.hole .planted{font-size:64px; animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+#g3-flowers{position:absolute; bottom:110px; width:100%; display:flex; gap:30px; justify-content:center;}
+.flower-src{font-size:76px; cursor:pointer; transition:transform .15s; background:#fff; border:4px solid var(--green); border-radius:28px; padding:8px 14px;}
+.flower-src:active{transform:scale(.9);}
+.flower-src.used{opacity:.3; pointer-events:none;}
+#g3-target{position:absolute; top:110px; width:100%; text-align:center; font-size:30px; font-weight:800;}
+#g3-target b{font-size:44px; color:var(--terra);}
+
+/* ---------- G4 река ---------- */
+#g4-river{position:absolute; left:0; right:0; top:190px; height:300px; background:linear-gradient(#8FC9E8,#5FA8D8); border-radius:0; overflow:hidden;}
+.leaf{
+  position:absolute; width:130px; height:96px; background:linear-gradient(135deg,#8FD19E,#5CB879);
+  border-radius:60% 40% 60% 40%/50% 60% 40% 50%; cursor:pointer; display:flex; flex-wrap:wrap;
+  align-items:center; justify-content:center; gap:6px; padding:12px; transition:transform .15s, box-shadow .2s;
+  animation:drift 6s ease-in-out infinite;
+}
+@keyframes drift{0%,100%{margin-top:0}50%{margin-top:14px}}
+.leaf .dot{width:16px; height:16px; background:#3E7A52; border-radius:50%;}
+.leaf.chosen{box-shadow:0 0 0 6px var(--gold); transform:scale(1.08);}
+.leaf.wrong-pick{animation:shake .4s;}
+#g4-shore{position:absolute; bottom:120px; right:7%; text-align:center;}
+#g4-target-num{font-size:90px; font-weight:900; color:#fff; background:var(--terra); width:150px; height:150px; border-radius:40px; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 6px 0 #B85B3E;}
+#g4-label{font-size:26px; font-weight:800; margin-bottom:10px;}
+
+/* ---------- G5 прятки ---------- */
+#g5-scene{position:absolute; inset:95px 0 0 0;}
+.hidden-digit{
+  position:absolute; font-size:56px; font-weight:900; cursor:pointer; opacity:.55; transition:transform .15s, opacity .2s;
+  text-shadow:0 1px 2px rgba(255,255,255,.6);
+}
+.hidden-digit.found{opacity:1; color:var(--gold); transform:scale(1.4) rotate(-8deg); pointer-events:none; text-shadow:0 0 12px rgba(255,201,77,.9);}
+.hidden-digit.decoy{opacity:.4;}
+.hidden-digit.decoy.tapped{animation:shake .4s;}
+#g5-counter{position:absolute; top:100px; width:100%; text-align:center; font-size:30px; font-weight:800;}
+
+/* ---------- G6 пазл ---------- */
+#g6-wrap{position:absolute; inset:120px 0 0 0; display:flex; justify-content:center; gap:120px; padding-top:40px;}
+.g6-col{display:flex; flex-direction:column; gap:26px;}
+.pair-item{
+  width:170px; height:130px; background:#fff; border:4px solid var(--peach); border-radius:28px;
+  display:flex; align-items:center; justify-content:center; font-size:52px; font-weight:900; cursor:pointer;
+  transition:transform .12s, box-shadow .2s; flex-wrap:wrap; gap:4px; padding:8px; color:var(--brown);
+}
+.pair-item .mini{font-size:34px;}
+.pair-item.sel{box-shadow:0 0 0 6px var(--gold); transform:scale(1.06);}
+.pair-item.matched{background:var(--green); border-color:#7FBF98; pointer-events:none; animation:popIn .4s;}
+.pair-item.mismatch{animation:shake .4s;}
+
+/* ---------- G7 считалка ---------- */
+#g7-stage{position:absolute; inset:130px 0 0 0; display:flex; flex-direction:column; align-items:center; gap:36px; padding-top:30px;}
+#g7-critters{display:flex; gap:24px; flex-wrap:wrap; justify-content:center; max-width:900px;}
+.critter{
+  font-size:70px; background:#fff; border:4px solid var(--peach); border-radius:30px; width:120px; height:120px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .12s;
+}
+.critter.counted{background:var(--gold); animation:popIn .4s; pointer-events:none;}
+.critter.next{box-shadow:0 0 0 6px var(--gold); animation:hintPulse 1.2s infinite;}
+#g7-count-big{font-size:80px; font-weight:900; color:var(--terra); min-height:100px;}
+
+/* ---------- Награда ---------- */
+#win-overlay{
+  position:fixed; inset:0; background:rgba(255,246,233,.92); z-index:100; display:none;
+  flex-direction:column; align-items:center; justify-content:center; gap:24px;
+}
+#win-overlay.show{display:flex;}
+#win-star{font-size:150px; animation:starSpin 1.2s cubic-bezier(.34,1.56,.64,1);}
+@keyframes starSpin{0%{transform:scale(0) rotate(-180deg)}100%{transform:scale(1) rotate(0)}}
+#win-text{font-size:40px; font-weight:900; color:var(--brown);}
+.confetti{position:fixed; width:14px; height:14px; z-index:101; border-radius:3px; animation:fall 1.6s ease-in forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg); opacity:0;}}
+
+/* ---------- Родители ---------- */
+#gate-overlay{position:fixed; inset:0; background:rgba(91,70,54,.75); z-index:200; display:none; align-items:center; justify-content:center;}
+#gate-overlay.show{display:flex;}
+#gate-card{background:var(--cream); border-radius:36px; padding:44px 56px; text-align:center; width:560px;}
+#gate-card h2{font-size:30px; margin-bottom:18px;}
+#gate-hold{width:100%; height:80px; border-radius:24px; border:none; background:var(--green); font-size:26px; font-weight:800; font-family:inherit; cursor:pointer; position:relative; overflow:hidden;}
+#gate-fill{position:absolute; left:0; top:0; bottom:0; width:0%; background:rgba(255,255,255,.5);}
+#gate-hold span{position:relative; z-index:2;}
+#gate-cancel{margin-top:16px; background:none; border:none; font-size:22px; color:var(--brown); cursor:pointer; font-family:inherit; text-decoration:underline;}
+#parents{background:#F3EBDD; overflow-y:auto;}
+#parents .panel{max-width:900px; margin:110px auto 40px; background:#fff; border-radius:32px; padding:36px 44px; box-shadow:0 6px 0 rgba(0,0,0,.06);}
+#parents h2{font-size:34px; margin-bottom:20px; color:var(--brown);}
+#parents h3{font-size:24px; margin:22px 0 10px; color:var(--brown);}
+.stat-row{display:flex; justify-content:space-between; font-size:22px; padding:8px 0; border-bottom:2px dashed #eee;}
+.prog-grid{display:grid; grid-template-columns:repeat(10,1fr); gap:8px; margin-top:8px;}
+.prog-cell{aspect-ratio:1; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; background:#F0E6D6;}
+.prog-cell.ok{background:var(--green);}
+.timer-row{display:flex; align-items:center; gap:16px; font-size:22px; margin:8px 0;}
+.timer-row input{width:90px; font-size:22px; padding:6px 10px; border-radius:12px; border:3px solid var(--peach); font-family:inherit;}
+#btn-reset-progress,#btn-close-parents{margin-top:22px;}
+.danger{background:#E2543E; box-shadow:0 6px 0 #A63A27;}
+
+/* ---------- Острова 3–5: общие компоненты ---------- */
+.g-body{position:absolute; inset:95px 0 0 0;}
+.gx-item{
+  position:absolute; font-size:76px; cursor:pointer; transition:transform .15s;
+  filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); line-height:1;
+}
+.gx-item:active{transform:scale(.85);}
+.gx-item.moving{animation:gxFloat 3s ease-in-out infinite;}
+@keyframes gxFloat{0%,100%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(14px,-18px) rotate(8deg)}}
+.gx-item.collected{transition:all .5s cubic-bezier(.34,1.3,.64,1); transform:scale(.4) rotate(180deg); opacity:0;}
+.gx-basket{
+  position:absolute; left:50%; bottom:120px; transform:translateX(-50%);
+  min-width:260px; height:110px; background:linear-gradient(#9DBE9A,#7FA37C);
+  border-radius:26px; border:5px solid #6B8A68; display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap; padding:8px 16px;
+}
+.gx-basket .cnt{font-size:36px; font-weight:900; color:#fff; text-shadow:0 2px 2px rgba(0,0,0,.3); width:100%; text-align:center;}
+.gx-basket .mini{font-size:30px;}
+.gx-answers{position:absolute; bottom:16px; width:100%; display:none; gap:30px; justify-content:center;}
+.gx-answers.show{display:flex;}
+.gx-target{position:absolute; top:8px; width:100%; text-align:center; font-size:28px; font-weight:800; z-index:5;}
+.gx-target b{font-size:42px; color:var(--terra);}
+.gx-holes{position:absolute; left:50%; top:150px; transform:translateX(-50%); display:flex; gap:20px; flex-wrap:wrap; justify-content:center; max-width:900px;}
+.gx-items-row{position:absolute; bottom:120px; width:100%; display:flex; gap:20px; justify-content:center; flex-wrap:wrap; padding:0 20px;}
+.gx-src{font-size:64px; cursor:pointer; background:#fff; border:4px solid var(--peach); border-radius:24px; padding:6px 12px; transition:transform .15s;}
+.gx-src:active{transform:scale(.88);}
+.gx-src.used{opacity:.3; pointer-events:none;}
+/* созвездия */
+#const-wrap{position:absolute; left:50%; top:100px; transform:translateX(-50%); background:radial-gradient(circle at 50% 30%, #3A4480, #232A54); border-radius:36px; border:6px solid #5560B8;}
+.cstar{cursor:pointer;}
+.cstar circle.halo{fill:transparent; transition:fill .2s;}
+.cstar.next circle.halo{fill:rgba(255,201,77,.35); animation:hintPulse 1.2s infinite;}
+.cstar.done circle.halo{fill:rgba(168,213,186,.5);}
+.cstar text{fill:#fff; font-weight:900; font-size:22px;}
+/* марафон */
+#marathon-hud{position:absolute; top:8px; width:100%; text-align:center; font-size:26px; font-weight:800; z-index:5;}
+.m-round{position:absolute; inset:60px 0 0 0;}
+.m-items{position:absolute; left:50%; top:60px; transform:translateX(-50%); display:flex; flex-wrap:wrap; gap:14px; justify-content:center; max-width:760px; font-size:64px;}
+.m-answers{position:absolute; bottom:120px; width:100%; display:flex; gap:26px; justify-content:center;}
+.m-leaf{width:120px; height:90px; background:linear-gradient(135deg,#8FD19E,#5CB879); border-radius:60% 40% 60% 40%/50% 60% 40% 50%; cursor:pointer; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:5px; padding:10px; position:static;}
+.m-leaf.chosen{box-shadow:0 0 0 6px var(--gold);}
+.m-leaf .dot{width:14px; height:14px; background:#3E7A52; border-radius:50%;}
+.m-hide-scene{position:absolute; inset:40px 0 0 0;}
+
+/* ============ МОБИЛЬНАЯ АДАПТАЦИЯ (портрет, ≤700px) ============ */
+@media (max-width: 700px){
+  .hud-pill{font-size:18px; padding:5px 12px; border-width:2px;}
+  #btn-mute,#btn-back,#btn-parents,#btn-full{width:52px; height:52px; font-size:22px; border-width:2px;}
+  #round-label{font-size:13px; padding:3px 10px; top:92px; border-width:2px; z-index:8;}
+  #umi{width:64px; height:76px;}
+  #umi-bubble{font-size:15px; max-width:64vw; min-width:110px; min-height:40px; padding:8px 12px; margin-bottom:26px; border-width:2px; border-radius:16px;}
+  #umi-bubble:before{left:-10px; bottom:12px; border-width:6px; border-right-width:10px;}
+  #umi-wrap{left:6px; bottom:6px; gap:4px;}
+
+  /* карта */
+  .map-title{font-size:20px; padding:76px 10px 0;}
+  .islands{position:absolute; top:130px; left:0; right:0; bottom:0; display:flex; flex-wrap:wrap; justify-content:center; align-content:flex-start; gap:12px; overflow-y:auto; padding-bottom:150px;}
+  .island{position:static !important; width:44vw;}
+  .island .blob{width:44vw; height:34vw; min-height:118px; border-width:3px;}
+  .island .digits{font-size:24px;} .island .name{font-size:15px;}
+  .island .lock{font-size:22px; top:4px; right:12px;}
+  .island .need{font-size:11px; bottom:5px;}
+  .island .stars-line{font-size:14px;}
+
+  /* острова */
+  .island-head{font-size:21px; top:76px; padding:0 8px;}
+  .island-screen .games-row{flex-wrap:wrap; gap:14px; padding:130px 10px 150px; height:100vh; overflow-y:auto; align-content:flex-start; align-items:flex-start;}
+  .game-card{width:44vw; height:200px; border-radius:26px; gap:8px;}
+  .game-card .ico{font-size:44px;} .game-card .ttl{font-size:17px;} .game-card .st{font-size:16px;}
+
+  /* общее */
+  .game-title{font-size:21px; top:64px;}
+  .big-btn{font-size:20px; padding:12px 26px; border-radius:22px;}
+  .num-btn{width:92px; height:92px; font-size:44px; border-radius:24px;}
+  .answers{gap:16px;}
+
+  /* G1 — компактная поточная раскладка: дерево → корзина → ответы, всё выше зоны Уми */
+  #g1 .tree-zone{width:92vw; height:56vw; top:132px;}
+  #g1-apples{width:92vw !important; height:48vw !important; top:132px !important;}
+  .apple{width:12vw; height:12vw;}
+  body.ph .apple{width:16vw; height:16vw;}
+  body.ph .basket-apple{width:18px; height:18px;}
+  .apple:before{left:45%; width:4px; height:9px; top:-6px;}
+  .apple:after{left:52%; width:12px; height:8px; top:-7px;}
+  #g1-basket{width:56vw; height:96px; bottom:auto; top:calc(132px + 56vw + 10px);}
+  .basket-count{top:auto; bottom:0; font-size:20px; line-height:24px; height:24px;}
+  .basket-apple{width:22px; height:22px;}
+  .answers{top:calc(132px + 56vw + 10px + 96px + 14px); bottom:auto; gap:14px;}
+
+  /* G2 — canvas масштабируется, tracePos уже учитывает коэффициент */
+  #trace-board{width:88vw; height:88vw; top:112px;}
+  #trace-bottom{bottom:130px; gap:12px;}
+  #trace-progress-wrap{width:46vw; height:26px;}
+
+  /* G3 */
+  #g3-target{font-size:19px; top:72px;}
+  #g3-target b{font-size:30px;}
+  #g3-bed{top:130px; gap:12px; flex-wrap:wrap; justify-content:center; padding:0 10px;}
+  .hole{width:17vw; height:17vw;}
+  .hole .planted{font-size:10vw;}
+  #g3-flowers{bottom:150px; gap:12px; flex-wrap:wrap; padding:0 16px;}
+  .flower-src{font-size:11vw; border-radius:18px; padding:4px 8px;}
+
+  /* G4 */
+  #g4-label{font-size:17px; top:120px;}
+  #g4-river{top:150px; height:52vw;}
+  .leaf{width:17.5vw; height:auto; min-height:20vw; padding:6px; gap:3px;}
+  .leaf .dot{width:2.9vw; height:2.9vw;}
+  #g4-shore{bottom:170px; right:4%;}
+  #g4-target-num{width:96px; height:96px; font-size:56px; border-radius:26px;}
+
+  /* G5 */
+  #g5-counter{font-size:19px; top:70px;}
+  .hidden-digit{font-size:11vw;}
+
+  /* G6 */
+  #g6-wrap{gap:6vw; padding-top:16px; top:70px;}
+  .g6-col{gap:14px;}
+  .pair-item{width:40vw; height:auto; min-height:26vw; font-size:9vw; border-radius:20px;}
+  .pair-item .mini{font-size:5.6vw;}
+
+  /* G7 */
+  #g7-stage{gap:18px; padding-top:12px; top:70px;}
+  #g7-critters{gap:12px; max-width:96vw;}
+  .critter{width:26vw; height:26vw; font-size:12vw; border-radius:20px;}
+  #g7-count-big{font-size:52px; min-height:64px;}
+
+  /* награда */
+  #win-star{font-size:90px;}
+  #win-text{font-size:26px; padding:0 16px; text-align:center;}
+
+  /* ворота + родители */
+  #gate-card{width:88vw; padding:24px 20px; border-radius:26px;}
+  #gate-card h2{font-size:22px;}
+  #gate-card p{font-size:16px;}
+  #gate-hold{height:64px; font-size:19px;}
+  #parents .panel{margin:70px 10px 30px; padding:20px 16px; border-radius:22px;}
+  #parents h2{font-size:24px;} #parents h3{font-size:18px;}
+  .stat-row{font-size:16px;}
+  .prog-cell{font-size:14px; border-radius:8px;}
+  .timer-row{font-size:16px;} .timer-row input{width:70px; font-size:16px;}
+
+  /* острова 3–5 */
+  .gx-item{font-size:13vw;}
+  .gx-basket{min-width:60vw; height:88px; bottom:244px;}
+  .gx-basket .cnt{font-size:26px;} .gx-basket .mini{font-size:22px;}
+  .gx-answers{bottom:140px; gap:14px;}
+  .gx-target{font-size:18px; top:2px;} .gx-target b{font-size:28px;}
+  .gx-holes{position:static; transform:none; margin-top:130px; gap:10px; padding:0 8px;}
+  .gx-items-row{position:static; margin-top:24px; gap:10px; padding:0 12px 170px;}
+  #g11 .g-body{overflow-y:auto;}
+  .gx-src{font-size:11vw; border-radius:16px; padding:4px 8px;}
+  #const-wrap{width:92vw !important; height:92vw !important; top:90px;}
+  #marathon-hud{font-size:17px; top:2px;}
+  .m-items{font-size:12vw; max-width:94vw; gap:8px; top:40px;}
+  .m-answers{bottom:150px; gap:12px;}
+  .m-leaf{width:26vw; height:19vw; padding:5px;}
+  .m-leaf .dot{width:3vw; height:3vw;}
+}
+</style>
+</head>
+<body>
+
+<script>
+/* Фото-ассеты: в веб-версии отключены (эмодзи-графика), Уми — векторная */
+window.PHOTOS = {};
+
+</script>
+
+<!-- HUD -->
+<div id="hud">
+  <div style="display:flex; gap:10px;">
+    <button id="btn-back" aria-label="Назад">🏠</button>
+    <button id="btn-mute" aria-label="Звук">🔊</button>
+    <button id="btn-full" aria-label="Полный экран">⛶</button>
+  </div>
+  <div class="hud-right">
+    <div class="hud-pill" id="stars-pill">⭐ <span id="stars-count">0</span></div>
+    <button id="btn-parents" aria-label="Родителям">👨‍👩‍👧</button>
+  </div>
+</div>
+<div id="round-label">Уровень 1</div>
+
+<!-- Уми -->
+<div id="umi-wrap">
+  <img id="umi" alt="Сова Уми" draggable="false">
+  <div id="umi-bubble"><span id="umi-speech">Привет! Я Уми. Пойдём считать!</span></div>
+</div>
+
+<!-- ============ КАРТА ============ -->
+<section class="screen active" id="map">
+  <div class="map-title">🌴 Числята: Волшебные острова 🌴</div>
+  <div class="islands" id="islands-box">
+    <div class="island" data-island="1" style="left:6%; top:24%;">
+      <div class="blob b1"><div class="digits">1–2</div><div class="name">Поляна</div></div>
+      <div class="stars-line" data-stars-line="1"></div>
+    </div>
+    <div class="island" data-island="2" style="left:30%; top:52%;">
+      <div class="blob b2"><div class="digits">3–4</div><div class="name">Речная заводь</div></div>
+      <div class="stars-line" data-stars-line="2"></div>
+    </div>
+    <div class="island" data-island="3" style="left:52%; top:20%;">
+      <div class="blob b3"><div class="lock">🔒</div><div class="digits">5–6</div><div class="name">Лес Пряток</div><div class="need">нужно 15⭐</div></div>
+      <div class="stars-line" data-stars-line="3"></div>
+    </div>
+    <div class="island" data-island="4" style="left:72%; top:50%;">
+      <div class="blob b4"><div class="lock">🔒</div><div class="digits">7–8</div><div class="name">Вулкан Смелых</div><div class="need">нужно 25⭐</div></div>
+      <div class="stars-line" data-stars-line="4"></div>
+    </div>
+    <div class="island" data-island="5" style="left:74%; top:6%;">
+      <div class="blob b5"><div class="lock">🔒</div><div class="digits">9–10</div><div class="name">Звёздный мыс</div><div class="need">нужно 35⭐</div></div>
+      <div class="stars-line" data-stars-line="5"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ОСТРОВ 1 ============ -->
+<section class="screen island-screen" id="island1">
+  <div class="island-head">🌼 Поляна Первых Шагов — цифры 1 и 2</div>
+  <div class="games-row">
+    <div class="game-card" data-game="g1"><div class="ico">🍎</div><div class="ttl">Собери урожай</div><div class="st" data-game-stars="g1"></div></div>
+    <div class="game-card" data-game="g2"><div class="ico">✏️</div><div class="ttl">Песчаные цифры</div><div class="st" data-game-stars="g2"></div></div>
+    <div class="game-card" data-game="g3"><div class="ico">🌷</div><div class="ttl">Сажаем цветы</div><div class="st" data-game-stars="g3"></div></div>
+  </div>
+</section>
+
+<!-- ============ ОСТРОВ 2 ============ -->
+<section class="screen island-screen" id="island2">
+  <div class="island-head">🐸 Речная заводь — цифры 3 и 4</div>
+  <div class="games-row">
+    <div class="game-card" data-game="g4"><div class="ico">🍃</div><div class="ttl">Волшебная река</div><div class="st" data-game-stars="g4"></div></div>
+    <div class="game-card" data-game="g5"><div class="ico">🦋</div><div class="ttl">Прятки с цифрами</div><div class="st" data-game-stars="g5"></div></div>
+    <div class="game-card" data-game="g6"><div class="ico">🧩</div><div class="ttl">Пазл-пары</div><div class="st" data-game-stars="g6"></div></div>
+    <div class="game-card" data-game="g7"><div class="ico">🎵</div><div class="ttl">Считалка</div><div class="st" data-game-stars="g7"></div></div>
+  </div>
+</section>
+
+<!-- ============ ОСТРОВ 3 ============ -->
+<section class="screen island-screen" id="island3">
+  <div class="island-head">🌲 Лес Пряток — цифры 5 и 6</div>
+  <div class="games-row">
+    <div class="game-card" data-game="g8"><div class="ico">🌰</div><div class="ttl">Сбор шишек</div><div class="st" data-game-stars="g8"></div></div>
+    <div class="game-card" data-game="g9"><div class="ico">🌲</div><div class="ttl">Прятки+</div><div class="st" data-game-stars="g9"></div></div>
+    <div class="game-card" data-game="g10"><div class="ico">✏️</div><div class="ttl">Песчаные 5 и 6</div><div class="st" data-game-stars="g10"></div></div>
+  </div>
+</section>
+
+<!-- ============ ОСТРОВ 4 ============ -->
+<section class="screen island-screen" id="island4">
+  <div class="island-head">🌋 Вулкан Смелых — цифры 7 и 8</div>
+  <div class="games-row">
+    <div class="game-card" data-game="g11"><div class="ico">🪨</div><div class="ttl">Камни в кратерах</div><div class="st" data-game-stars="g11"></div></div>
+    <div class="game-card" data-game="g12"><div class="ico">✨</div><div class="ttl">Летящие искры</div><div class="st" data-game-stars="g12"></div></div>
+    <div class="game-card" data-game="g13"><div class="ico">✏️</div><div class="ttl">Песчаные 7 и 8</div><div class="st" data-game-stars="g13"></div></div>
+  </div>
+</section>
+
+<!-- ============ ОСТРОВ 5 ============ -->
+<section class="screen island-screen" id="island5">
+  <div class="island-head">🌟 Звёздный мыс — цифры 9 и 10</div>
+  <div class="games-row">
+    <div class="game-card" data-game="g14"><div class="ico">⭐</div><div class="ttl">Созвездия</div><div class="st" data-game-stars="g14"></div></div>
+    <div class="game-card" data-game="g15"><div class="ico">🧩</div><div class="ttl">Пары 6–10</div><div class="st" data-game-stars="g15"></div></div>
+    <div class="game-card" data-game="g16"><div class="ico">🏆</div><div class="ttl">Звёздный марафон</div><div class="st" data-game-stars="g16"></div></div>
+  </div>
+</section>
+
+<!-- ============ G8–G16: контейнеры (наполняются движками) ============ -->
+<section class="screen" id="g8"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g9"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g10"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g11"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g12"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g13"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g14"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g15"><div class="game-title"></div><div class="g-body"></div></section>
+<section class="screen" id="g16"><div class="game-title"></div><div class="g-body"></div></section>
+
+<!-- ============ G1 УРОЖАЙ ============ -->
+<section class="screen" id="g1">
+  <div class="game-title">Собери урожай! 🍎</div>
+  <div id="game-area">
+    <svg class="tree-zone" viewBox="0 0 640 480">
+      <rect x="290" y="260" width="60" height="220" rx="20" fill="#8A5A44"/>
+      <ellipse cx="320" cy="200" rx="240" ry="170" fill="#5CB879"/>
+      <ellipse cx="200" cy="240" rx="130" ry="110" fill="#6CC98C"/>
+      <ellipse cx="440" cy="230" rx="140" ry="115" fill="#6CC98C"/>
+    </svg>
+    <img class="tree-zone photo-tree" id="g1-tree" alt="" draggable="false">
+    <div id="g1-apples" style="position:absolute; left:50%; top:110px; transform:translateX(-50%); width:640px; height:420px;"></div>
+    <div id="g1-basket"><div class="basket-count" id="g1-count">0</div><div id="g1-basket-apples"></div></div>
+    <div class="answers" id="g1-answers"></div>
+  </div>
+</section>
+
+<!-- ============ G2 ПЕСЧАНЫЕ ЦИФРЫ ============ -->
+<section class="screen" id="g2">
+  <div class="game-title">Обведи цифру по песку ✏️</div>
+  <canvas id="trace-board" width="560" height="560"></canvas>
+  <div id="trace-bottom">
+    <div id="trace-progress-wrap"><div id="trace-progress"></div></div>
+    <button class="big-btn" id="btn-clear-trace">Стереть 🧽</button>
+  </div>
+</section>
+
+<!-- ============ G3 САД ============ -->
+<section class="screen" id="g3">
+  <div id="g3-target">Посади <b id="g3-need">3</b> цветка!</div>
+  <div id="g3-bed"></div>
+  <div id="g3-flowers"></div>
+</section>
+
+<!-- ============ G4 РЕКА ============ -->
+<section class="screen" id="g4">
+  <div class="game-title">Волшебная река 🍃</div>
+  <div id="g4-label" style="position:absolute; top:150px; width:100%; text-align:center;">Выбери листья, где точек столько же:</div>
+  <div id="g4-river"></div>
+  <div id="g4-shore"><div id="g4-target-num">4</div></div>
+</section>
+
+<!-- ============ G5 ПРЯТКИ ============ -->
+<section class="screen" id="g5">
+  <div class="game-title">Прятки с цифрами 🦋</div>
+  <div id="g5-counter"></div>
+  <div id="g5-scene"></div>
+</section>
+
+<!-- ============ G6 ПАЗЛ ============ -->
+<section class="screen" id="g6">
+  <div class="game-title">Соедини цифру и картинку 🧩</div>
+  <div id="g6-wrap">
+    <div class="g6-col" id="g6-left"></div>
+    <div class="g6-col" id="g6-right"></div>
+  </div>
+</section>
+
+<!-- ============ G7 СЧИТАЛКА ============ -->
+<section class="screen" id="g7">
+  <div class="game-title">Весёлая считалка 🎵</div>
+  <div id="g7-stage">
+    <div id="g7-count-big">?</div>
+    <div id="g7-critters"></div>
+    <button class="big-btn" id="btn-play-song">Слушать считалку 🎶</button>
+  </div>
+</section>
+
+<!-- ============ НАГРАДА ============ -->
+<div id="win-overlay">
+  <div id="win-star">⭐</div>
+  <div id="win-text">Ура, ты смог!</div>
+  <button class="big-btn" id="btn-win-next">Дальше ➜</button>
+</div>
+
+<!-- ============ РОДИТЕЛЬСКИЕ ВОРОТА ============ -->
+<div id="gate-overlay">
+  <div id="gate-card">
+    <h2>Раздел для родителей</h2>
+    <p style="font-size:22px; margin-bottom:18px;">Удерживайте кнопку 3 секунды</p>
+    <button id="gate-hold"><div id="gate-fill"></div><span>Держи…</span></button>
+    <br><button id="gate-cancel">Отмена</button>
+  </div>
+</div>
+
+<!-- ============ РОДИТЕЛЬСКИЙ РАЗДЕЛ ============ -->
+<section class="screen" id="parents">
+  <div class="panel">
+    <h2>👨‍👩‍👧 Родительский раздел</h2>
+    <h3>Прогресс</h3>
+    <div class="stat-row"><span>Всего звёзд</span><b id="p-stars">0</b></div>
+    <div class="stat-row"><span>Игр сыграно</span><b id="p-plays">0</b></div>
+    <div class="stat-row"><span>Уровень сложности</span><b id="p-level">1</b></div>
+    <h3>Цифры, которые освоены (получена звезда)</h3>
+    <div class="prog-grid" id="p-grid"></div>
+    <h3>Лимит времени</h3>
+    <div class="timer-row">Сессия, минут: <input type="number" id="p-session-min" min="5" max="60" value="15"></div>
+    <div class="timer-row">В день, минут: <input type="number" id="p-day-min" min="10" max="180" value="30"></div>
+    <button class="big-btn" id="btn-close-parents">← К игре</button>
+    <button class="big-btn danger" id="btn-reset-progress">Сбросить прогресс</button>
+  </div>
+</section>
+
+<script>
+'use strict';
+/* ================= СОСТОЯНИЕ ================= */
+const State = {
+  data: { stars:0, plays:0, level:1, gameStars:{}, unlocked:[1], streak:0, failStreak:0, sessionMin:15, dayMin:30 },
+  save(){ localStorage.setItem('chislyata', JSON.stringify(this.data)); },
+  load(){
+    try{
+      const d = JSON.parse(localStorage.getItem('chislyata'));
+      if(d) Object.assign(this.data, d);
+    }catch(e){}
+  },
+  addStar(){
+    this.data.stars++; this.data.plays++; this.checkUnlock(); this.save(); renderStars();
+  },
+  checkUnlock(){
+    const need = {2:5, 3:15, 4:25, 5:35};
+    for(const k in need) if(this.data.stars>=need[k] && !this.data.unlocked.includes(+k)) this.data.unlocked.push(+k);
+  }
+};
+State.load();
+
+/* ================= ОЗВУЧКА ================= */
+let muted = false;
+let speakTimer = null;
+/* -------- Ударения для озвучки: '+' после ударной гласной -> U+0301 -------- */
+const ACUTE = '́';
+const STRESS = {};
+('приве+т уми+ куда+ отправи+мся вы+бери о+стров острова+ поля+на и+гру речна+я заво+дь э+тот откро+ется '+
+ 'когда+ бу+дет собери+ я+блоки я+блоко я+блока я+блок нажима+й нажми+ ско+лько собра+ли ци+фру ци+фра '+
+ 'ци+фры ци+фр посчита+ем вме+сте обведи+ па+льчиком песку+ кака+я краси+вая стира+ем про+буем сно+ва '+
+ 'сна+чала цвето+к цветка+ внизу+ лу+нки за+няты бо+льше ну+жно посади+ ро+вно ве+рно подхо+дит то+чно '+
+ 'то+чки то+чка то+чек то+чками листе+ ли+стья листа+ она+ отли+чно и+щем и+щи спря+талась спря+тались '+
+ 'ве+зде пото+м карти+нку карти+нке сто+лько па+ра нашла+сь совпа+ло молоде+ц предме+ты предме+тов '+
+ 'поря+дку начни+ пе+рвого послу+шай счита+лку зверя+т дава+й здо+рово да+льше э+то смотри+ кружо+к '+
+ 'вверху+ ка+мень ка+мни кра+теры запо+лнены созве+здие гото+во красота+ соединя+ем соедини+ ра+унд '+
+ 'про+йден держа+ть ура+ настоя+щий чемпио+н гордя+тся тобо+й су+пер почти+ получи+лось получи+тся '+
+ 'ничего+ стра+шного попро+буй попро+буем белка+ разброса+ла ши+шки ши+шек вулка+н вулка+на про+сит '+
+ 'положи+ напи+сано и+скры летя+т по+ймай фина+льное испыта+ние бы+стрых зада+ний подря+д спра+вишься '+
+ 'во+семь счетово+д счита+ть счита+й счита+ем посчита+й на+йди лесу+ '+
+ 'щеко+тно тро+гает смея+ться бу+ду растрепа+ются ще+кочешь и+щешь голова+ закружи+лась сдаю+сь '+
+ 'победи+л нажа+л мно+го вку+снее ду+мает заговори+лась наверху+ друзья+ живу+т учи+ть пришла+ пе+рья'
+).split(/\s+/).forEach(w=>{ const i=w.indexOf('+'); if(i>0) STRESS[w.replace('+','')]=i; });
+function applyStress(text){
+  return text.replace(/[А-Яа-яЁё]+/g, w=>{
+    const i = STRESS[w.toLowerCase()];
+    return i===undefined ? w : w.slice(0,i)+ACUTE+w.slice(i);
+  });
+}
+/* -------- Тап: мгновенное срабатывание по нажатию (pointerdown = mousedown + касание) -------- */
+function addTap(el, fn){
+  el.addEventListener('pointerdown', e=>{ fn.call(el, e); });
+}
+/* Вариант для прокручиваемых зон: срабатывает по отпусканию с допуском 30px, чтобы не мешать свайпу */
+function addTapUp(el, fn){
+  let sx=0, sy=0;
+  el.addEventListener('pointerdown', e=>{ sx=e.clientX; sy=e.clientY; });
+  el.addEventListener('pointerup', e=>{
+    if(Math.hypot(e.clientX-sx, e.clientY-sy) <= 30) fn.call(el, e);
+  });
+}
+/* позиция (%) внутри scene не перекрывается Уми и её пузырём */
+function umiClear(sceneEl, xPct, yPct){
+  const sr=sceneEl.getBoundingClientRect();
+  const px=sr.left + xPct/100*sr.width, py=sr.top + yPct/100*sr.height;
+  const m=45;
+  for(const id of ['umi','umi-bubble']){
+    const el=document.getElementById(id); if(!el) continue;
+    const r=el.getBoundingClientRect(); if(!r.width) continue;
+    if(px+m > r.left && px-m < r.right && py+m > r.top && py-m < r.bottom) return false;
+  }
+  return true;
+}
+function speak(text){
+  if(muted) return;
+  try{
+    if(!('speechSynthesis' in window)) return;
+    // новая реплика вытесняет старую: отменяем текущее и всю очередь
+    const wasBusy = speechSynthesis.speaking || speechSynthesis.pending;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(applyStress(text));
+    u.lang='ru-RU'; u.rate=0.95; u.pitch=1.15;
+    const v = speechSynthesis.getVoices().find(v=>v.lang && v.lang.startsWith('ru'));
+    if(v) u.voice=v;
+    clearTimeout(speakTimer);
+    if(wasBusy){
+      // Chrome иногда молча отбрасывает speak() сразу после cancel() — даём такт на отмену
+      speakTimer = setTimeout(()=>{
+        try{ if(!muted) speechSynthesis.speak(u); }catch(e){}
+      }, 80);
+    } else {
+      speechSynthesis.speak(u);
+    }
+  }catch(e){}
+}
+function umiSay(text){
+  document.getElementById('umi-speech').textContent = text;
+  speak(text);
+}
+// разблокировка озвучки по первому жесту (требование мобильных браузеров)
+document.addEventListener('pointerdown', function unlock(){
+  try{ if('speechSynthesis' in window){ speechSynthesis.getVoices(); } }catch(e){}
+  document.removeEventListener('pointerdown', unlock);
+}, {once:false});
+const PRAISE = ['Ура, ты смог!','Здорово! Молодец!','Ты настоящий счетовод!','Супер! Так держать!','Вот это да, отлично!'];
+const OOPS = ['Давай попробуем ещё раз!','Почти получилось! Посчитаем вместе.','Ничего страшного, попробуй снова!'];
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+/* -------- Фото-ассеты: включение и помощник -------- */
+function photoImg(key, emoji){
+  if(window.PHOTOS && PHOTOS[key]){
+    const im=document.createElement('img'); im.src=PHOTOS[key]; im.alt=''; im.draggable=false; im.className='ph';
+    return im;
+  }
+  const s=document.createElement('span'); s.textContent=emoji; return s;
+}
+const UMI_SVG='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTAgMTMwIj4KPGVsbGlwc2UgY3g9IjU1IiBjeT0iNzgiIHJ4PSI0MCIgcnk9IjQ2IiBmaWxsPSIjQjQ5QkRCIi8+CjxlbGxpcHNlIGN4PSI1NSIgY3k9Ijg4IiByeD0iMjYiIHJ5PSIzMiIgZmlsbD0iI0Q5Q0NGMCIvPgo8ZWxsaXBzZSBjeD0iMjQiIGN5PSI3MCIgcng9IjEyIiByeT0iMzAiIGZpbGw9IiM5QjdGRDQiIHRyYW5zZm9ybT0icm90YXRlKDE0IDI0IDcwKSIvPgo8ZWxsaXBzZSBjeD0iODYiIGN5PSI3MCIgcng9IjEyIiByeT0iMzAiIGZpbGw9IiM5QjdGRDQiIHRyYW5zZm9ybT0icm90YXRlKC0xNCA4NiA3MCkiLz4KPHBhdGggZD0iTTIyIDM0IEwzNCAxNCBMNDYgMzAgWiIgZmlsbD0iIzlCN0ZENCIvPgo8cGF0aCBkPSJNODggMzQgTDc2IDE0IEw2NCAzMCBaIiBmaWxsPSIjOUI3RkQ0Ii8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNTIiIHI9IjE1IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjcwIiBjeT0iNTIiIHI9IjE1IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNTIiIHI9IjciIGZpbGw9IiM1QjQ2MzYiLz4KPGNpcmNsZSBjeD0iNzAiIGN5PSI1MiIgcj0iNyIgZmlsbD0iIzVCNDYzNiIvPgo8Y2lyY2xlIGN4PSI0Mi41IiBjeT0iNDkuNSIgcj0iMi42IiBmaWxsPSIjZmZmIi8+CjxjaXJjbGUgY3g9IjcyLjUiIGN5PSI0OS41IiByPSIyLjYiIGZpbGw9IiNmZmYiLz4KPHBhdGggZD0iTTU1IDU4IEw0NyA2OCBMNTUgNzQgTDYzIDY4IFoiIGZpbGw9IiNGRkM5NEQiLz4KPHBhdGggZD0iTTQwIDExNiBxNCA2IDggMCBNNDggMTE2IHE0IDYgOCAwIE01NiAxMTYgcTQgNiA4IDAgTTY0IDExNiBxNCA2IDggMCIgc3Ryb2tlPSIjRkZDOTREIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=';
+function initPhotos(){
+  if(!window.PHOTOS) return;
+  if(!PHOTOS.umi) document.getElementById('umi').src=UMI_SVG;
+  document.body.classList.add('ph');
+  const R=document.documentElement.style;
+  if(PHOTOS.apple) R.setProperty('--ph-apple','url("'+PHOTOS.apple+'")');
+  if(PHOTOS.basket) R.setProperty('--ph-basket','url("'+PHOTOS.basket+'")');
+  if(PHOTOS.leaf) R.setProperty('--ph-leaf','url("'+PHOTOS.leaf+'")');
+  if(PHOTOS.umi) document.getElementById('umi').src=PHOTOS.umi;
+  if(PHOTOS.tree) document.getElementById('g1-tree').src=PHOTOS.tree;
+  if(PHOTOS.goldstar){ const ws=document.getElementById('win-star'); ws.innerHTML=''; ws.appendChild(photoImg('goldstar','⭐')); }
+}
+
+/* ================= НАВИГАЦИЯ ================= */
+let currentScreen = 'map';
+const backTarget = { island1:'map', island2:'map', island3:'map', island4:'map', island5:'map',
+  g1:'island1', g2:'island1', g3:'island1', g4:'island2', g5:'island2', g6:'island2', g7:'island2',
+  g8:'island3', g9:'island3', g10:'island3', g11:'island4', g12:'island4', g13:'island4',
+  g14:'island5', g15:'island5', g16:'island5', parents:'map' };
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  currentScreen = id;
+  document.getElementById('btn-back').style.display = (id==='map') ? 'none' : 'block';
+  document.getElementById('round-label').style.display = (id==='g1') ? 'block' : 'none';
+  if(id==='map') umiSay('Куда отправимся? Выбери остров!', false);
+}
+addTap(document.getElementById('btn-back'), ()=> show(backTarget[currentScreen]||'map'));
+
+addTapUp(document.getElementById('islands-box'), e=>{
+  const isl = e.target.closest('.island'); if(!isl) return;
+  const n = +isl.dataset.island;
+  if(State.data.unlocked.includes(n)){
+    show('island'+n);
+    umiSay(n===1 ? 'Поляна ждёт! Выбери игру.' : 'Речная заводь! Куда пойдём?', false);
+  } else {
+    const need = {3:15,4:25,5:35}[n]||5;
+    umiSay(`Этот остров откроется, когда будет ${need} звёздочек!`);
+  }
+});
+document.querySelectorAll('.game-card').forEach(c=>{
+  addTapUp(c, ()=> startGame(c.dataset.game));
+});
+
+/* ================= HUD ================= */
+function renderIslands(){
+  document.querySelectorAll('.island').forEach(el=>{
+    const n = +el.dataset.island;
+    const un = State.data.unlocked.includes(n);
+    el.classList.toggle('locked', !un);
+    const lock = el.querySelector('.lock'); if(lock) lock.style.display = un ? 'none' : '';
+    const need = el.querySelector('.need'); if(need) need.style.display = un ? 'none' : '';
+  });
+}
+function renderStars(){
+  document.getElementById('stars-count').textContent = State.data.stars;
+  renderIslands();
+  document.querySelectorAll('[data-game-stars]').forEach(el=>{
+    const n = State.data.gameStars[el.dataset.gameStars]||0;
+    el.textContent = '⭐'.repeat(Math.min(n,5)) || '—';
+  });
+}
+addTap(document.getElementById('btn-mute'), function(){
+  muted = !muted;
+  this.textContent = muted ? '🔇' : '🔊';
+  if(muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+});
+
+/* -------- Полноэкранный режим -------- */
+const btnFull = document.getElementById('btn-full');
+if(!document.documentElement.requestFullscreen){
+  btnFull.style.display = 'none'; // напр. iPhone Safari — API недоступен
+}
+addTap(btnFull, ()=>{
+  if(document.fullscreenElement){
+    document.exitFullscreen().catch(()=>{});
+  } else {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+});
+document.addEventListener('fullscreenchange', ()=>{
+  btnFull.textContent = document.fullscreenElement ? '✕' : '⛶';
+});
+
+/* -------- Тапы по Уми: щекотка, эскалация, пасхалки -------- */
+let umiPokes = 0, umiPokeTimer = null;
+const POKE_R = [
+  ['Хи-хи, щекотно!','Ой! Кто это меня трогает?','Хе-хе, я же смеяться буду!'],
+  ['Так! Я вообще-то учить пришла!','Эй, у меня перья растрепаются!','Ты цифры ищешь или меня щекочешь?'],
+  ['Ой-ой-ой, голова закружилась!','Всё-всё, сдаюсь! Ты победил!'],
+  ['По моим подсчётам, ты нажал уже много раз. Давай посчитаем их? Раз… два…','А давай лучше яблоки посчитаем? Они вкуснее, чем я!']
+];
+const POKE_A = ['poke-tickle','poke-puff','poke-spin','poke-prof'];
+const POKE_E = [
+  {t:'Ап-чхи! Кто-то обо мне думает!', a:'poke-sneeze'},
+  {t:'!имУ я тевирП …Ой, заговорилась!', a:'poke-spin'},
+  {t:'Тссс… если нажмёшь на звёздочку наверху — там мои друзья живут.', a:'poke-prof'}
+];
+function umiPoke(){
+  umiPokes++;
+  clearTimeout(umiPokeTimer);
+  umiPokeTimer = setTimeout(()=>umiPokes=0, 3000); // 3 секунды без тапов — Уми «остывает»
+  const umi = document.getElementById('umi');
+  let text, anim;
+  if(Math.random() < 0.12){
+    const e = rnd(POKE_E); text = e.t; anim = e.a;
+  } else {
+    const tier = Math.min(3, Math.floor((umiPokes-1)/3));
+    text = rnd(POKE_R[tier]); anim = POKE_A[tier];
+    if(tier===3) umiPokes = 0; // «профессорская пауза» сбрасывает счётчик
+  }
+  umi.classList.remove(...POKE_A, 'poke-sneeze');
+  void umi.offsetWidth; // перезапуск анимации
+  umi.classList.add(anim);
+  setTimeout(()=>umi.classList.remove(anim), 950);
+  umiSay(text);
+}
+addTap(document.getElementById('umi'), umiPoke);
+
+/* ================= НАГРАДА ================= */
+function confetti(){
+  const colors=['#FFC94D','#E07856','#A8D5BA','#7FC8E8','#B49BDB'];
+  for(let i=0;i<36;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.top='-20px';
+    c.style.background=colors[i%colors.length];
+    c.style.animationDelay=(Math.random()*0.5)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2200);
+  }
+}
+function win(gameId){
+  State.addStar();
+  State.data.gameStars[gameId]=(State.data.gameStars[gameId]||0)+1;
+  State.data.streak++; State.data.failStreak=0;
+  if(State.data.streak>=3 && State.data.level<2){ State.data.level=2; State.data.streak=0; }
+  State.save(); renderStars();
+  const praise = rnd(PRAISE);
+  document.getElementById('win-text').textContent = praise;
+  umiSay(praise);
+  confetti();
+  document.getElementById('win-overlay').classList.add('show');
+}
+addTap(document.getElementById('btn-win-next'), ()=>{
+  document.getElementById('win-overlay').classList.remove('show');
+  startGame(currentScreen); // новый раунд той же игры
+});
+function fail(){
+  State.data.failStreak++; State.data.streak=0;
+  if(State.data.failStreak>=2 && State.data.level>1){ State.data.level=1; State.data.failStreak=0; }
+  State.save();
+}
+</script>
+<script>
+'use strict';
+/* ================= ИГРЫ ================= */
+let g4={}, g5={}, g6={}, g7={};
+const NUM_WORDS = ['ноль','один','два','три','четыре','пять','шесть','семь','восемь','девять','десять'];
+function dotWord(n){ if(n===1) return 'точка'; if(n>=2&&n<=4) return 'точки'; return 'точек'; }
+function appleWord(n){ if(n===1) return 'одно яблоко'; if(n>=2&&n<=4) return ['','','два яблока','три яблока','четыре яблока'][n]; return NUM_WORDS[n]+' яблок'; }
+
+function startGame(id){
+  show(id);
+  const legacy = {g1:initG1,g2:initG2,g3:initG3,g4:initG4,g5:initG5,g6:initG6,g7:initG7}[id];
+  if(legacy){ legacy(); return; }
+  engineStart(id);
+}
+
+/* ---------- G1 Собери урожай ---------- */
+let g1 = {};
+function initG1(){
+  const lvl = State.data.level;
+  const max = lvl===2 ? 10 : 5, min = lvl===2 ? 6 : 1;
+  const total = min + Math.floor(Math.random()*(max-min+1));
+  g1 = { total, picked:0 };
+  document.getElementById('g1-count').textContent = '0';
+  document.getElementById('g1-basket-apples').innerHTML='';
+  document.getElementById('g1-answers').classList.remove('show');
+  document.getElementById('round-label').textContent = 'Уровень '+lvl;
+  const box = document.getElementById('g1-apples'); box.innerHTML='';
+  const placed=[];
+  for(let i=0;i<total;i++){
+    let x,y,tries=0;
+    do{
+      x = 8+Math.random()*80; y = 6+Math.random()*62; tries++;
+    }while(tries<60 && placed.some(p=>Math.hypot(p.x-x,p.y-y)<14));
+    placed.push({x,y});
+    const a=document.createElement('div');
+    a.className='apple'+(lvl===2?' sway':'');
+    a.style.left=x+'%'; a.style.top=y+'%';
+    if(lvl===2) a.style.animationDelay=(Math.random()*2)+'s';
+    addTap(a, ()=>pickApple(a));
+    box.appendChild(a);
+  }
+  umiSay('Собери все яблоки! Нажимай на них.', false);
+}
+function pickApple(a){
+  if(a.classList.contains('fly')) return;
+  g1.picked++;
+  const basket = document.getElementById('g1-basket').getBoundingClientRect();
+  const r = a.getBoundingClientRect();
+  a.style.position='fixed';
+  a.style.left=r.left+'px'; a.style.top=r.top+'px';
+  requestAnimationFrame(()=>{
+    a.classList.add('fly');
+    a.style.left=(basket.left+basket.width/2-32)+'px';
+    a.style.top=(basket.top+30)+'px';
+  });
+  setTimeout(()=>{
+    a.style.display='none';
+    const ba=document.createElement('div');
+    ba.className='basket-apple';
+    const mob=window.innerWidth<=700;
+    const bw=document.getElementById('g1-basket').clientWidth;
+    if(document.body.classList.contains('ph')){
+      // фоторежим: один центрированный ряд на «подносе»
+      const size=mob?18:24;
+      const step=Math.min(mob?26:32, (bw-size-8)/Math.max(1,(g1.total-1)));
+      const rowW=(g1.total-1)*step+size;
+      ba.style.left=((bw-rowW)/2+(g1.picked-1)*step)+'px';
+      ba.style.top=(mob?'24px':'32px');
+    } else {
+      const step=mob?28:36;
+      const perRow=Math.max(3, Math.floor((bw-14)/step));
+      ba.style.left=(7+((g1.picked-1)%perRow)*step)+'px';
+      ba.style.top=(g1.picked>perRow?(mob?'32px':'58px'):(mob?'4px':'14px'));
+    }
+    document.getElementById('g1-basket-apples').appendChild(ba);
+    document.getElementById('g1-count').textContent = g1.picked;
+    umiSay(appleWord(g1.picked).replace(/^./,c=>c.toUpperCase())+'!');
+    if(g1.picked===g1.total) setTimeout(g1Ask, 900);
+  }, 600);
+}
+function g1Ask(){
+  const box=document.getElementById('g1-answers');
+  box.innerHTML='';
+  const correct=g1.total;
+  const opts=new Set([correct]);
+  while(opts.size<3){
+    const d=correct+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2));
+    if(d>=1 && d<=10) opts.add(d);
+  }
+  [...opts].sort(()=>Math.random()-.5).forEach(n=>{
+    const b=document.createElement('button');
+    b.className='num-btn'; b.textContent=n; b.dataset.n=n;
+    addTap(b, ()=>g1Answer(b,n,correct));
+    box.appendChild(b);
+  });
+  box.classList.add('show');
+  umiSay('Сколько яблок мы собрали? Выбери цифру!', false);
+}
+function g1Answer(btn,n,correct){
+  if(n===correct){
+    document.getElementById('g1-answers').classList.remove('show');
+    win('g1');
+  } else {
+    fail();
+    btn.classList.add('wrong');
+    setTimeout(()=>btn.classList.remove('wrong'),450);
+    umiSay(rnd(OOPS)+' Посчитаем вместе!');
+    const apples=[...document.querySelectorAll('#g1-basket-apples .basket-apple')];
+    apples.forEach((ap,i)=>{
+      setTimeout(()=>{
+        ap.style.boxShadow='0 0 0 5px #FFC94D';
+        speak(String(i+1));
+        setTimeout(()=>ap.style.boxShadow='',700);
+      }, i*850);
+    });
+    setTimeout(()=>{
+      document.querySelectorAll('#g1-answers .num-btn').forEach(b=>{
+        if(+b.dataset.n===correct) b.classList.add('hint');
+      });
+    }, apples.length*850+300);
+  }
+}
+
+/* ---------- G2 Песчаные цифры ---------- */
+let g2 = {};
+function initG2(){
+  const digit = 1+Math.floor(Math.random()*4); // цифры 1-4
+  const cvs = document.getElementById('trace-board');
+  const ctx = cvs.getContext('2d');
+  g2 = { digit, cvs, ctx, points:[], covered:new Set(), drawing:false, done:false };
+  drawTraceBoard();
+  document.getElementById('trace-progress').style.width='0%';
+  umiSay(`Обведи цифру ${digit} пальчиком по песку!`, false);
+}
+function drawTraceBoard(){
+  const {ctx,cvs,digit,points} = g2;
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  // песок
+  ctx.fillStyle='#E8C89A'; ctx.fillRect(0,0,cvs.width,cvs.height);
+  for(let i=0;i<400;i++){
+    ctx.fillStyle=`rgba(140,100,60,${Math.random()*.15})`;
+    ctx.beginPath(); ctx.arc(Math.random()*560,Math.random()*560,Math.random()*2.2,0,7); ctx.fill();
+  }
+  // контур цифры
+  ctx.font='900 460px Nunito, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(138,90,68,.45)'; ctx.lineWidth=16;
+  ctx.setLineDash([4,14]);
+  ctx.strokeText(String(digit),280,300);
+  ctx.setLineDash([]);
+  // точки выборки для прогресса — с отдельного offscreen-холста
+  const off = document.createElement('canvas'); off.width=off.height=560;
+  const octx = off.getContext('2d');
+  octx.font='900 460px Nunito, sans-serif'; octx.textAlign='center'; octx.textBaseline='middle';
+  octx.fillText(String(digit),280,300);
+  const data = octx.getImageData(0,0,560,560).data;
+  g2.points=[];
+  for(let y=0;y<560;y+=12) for(let x=0;x<560;x+=12){
+    if(data[(y*560+x)*4+3]>100) g2.points.push([x,y]);
+  }
+  g2.totalPoints=g2.points.length;
+}
+function tracePos(e){
+  const r=g2.cvs.getBoundingClientRect();
+  const t=(e.touches&&e.touches[0])||e;
+  return [(t.clientX-r.left)*(560/r.width), (t.clientY-r.top)*(560/r.height)];
+}
+function traceMove(e){
+  if(!g2.drawing||g2.done) return;
+  e.preventDefault();
+  const [x,y]=tracePos(e);
+  const ctx=g2.ctx;
+  ctx.strokeStyle='#B85B3E'; ctx.lineWidth=34; ctx.lineCap='round';
+  if(g2.last){ ctx.beginPath(); ctx.moveTo(g2.last[0],g2.last[1]); ctx.lineTo(x,y); ctx.stroke(); }
+  g2.last=[x,y];
+  g2.points.forEach((p,i)=>{
+    if(!g2.covered.has(i) && Math.hypot(p[0]-x,p[1]-y)<26) g2.covered.add(i);
+  });
+  const pct = g2.totalPoints? Math.round(g2.covered.size/g2.totalPoints*100):0;
+  document.getElementById('trace-progress').style.width=pct+'%';
+  if(pct>=85 && !g2.done){
+    g2.done=true;
+    umiSay('Какая красивая цифра '+g2.digit+'!');
+    setTimeout(()=>win('g2'),900);
+  }
+}
+(function bindTrace(){
+  const cvs=document.getElementById('trace-board');
+  const start=e=>{ g2.drawing=true; g2.last=null; };
+  const end=()=>{ g2.drawing=false; };
+  cvs.addEventListener('mousedown',start); cvs.addEventListener('mousemove',traceMove); window.addEventListener('mouseup',end);
+  cvs.addEventListener('touchstart',start,{passive:true}); cvs.addEventListener('touchmove',traceMove,{passive:false}); cvs.addEventListener('touchend',end);
+})();
+addTap(document.getElementById('btn-clear-trace'), ()=>{
+  g2.covered.clear(); g2.done=false; drawTraceBoard();
+  document.getElementById('trace-progress').style.width='0%';
+  umiSay('Стираем и пробуем снова!', false);
+});
+
+/* ---------- G3 Сад ---------- */
+function initG3(){
+  const need = State.data.level===2 ? 4+Math.floor(Math.random()*3) : 2+Math.floor(Math.random()*3); // 2-4 / 4-6
+  document.getElementById('g3-need').textContent = need;
+  const bed=document.getElementById('g3-bed'); bed.innerHTML='';
+  const holes=[];
+  for(let i=0;i<need;i++){
+    const h=document.createElement('div'); h.className='hole';
+    addTap(h, ()=>umiSay('Сначала выбери цветок внизу!', false));
+    bed.appendChild(h); holes.push(h);
+  }
+  const fl=document.getElementById('g3-flowers'); fl.innerHTML='';
+  const extras = 2;
+  const flowers=['🌷','🌼','🌻','🌸','🌺'];
+  for(let i=0;i<need+extras;i++){
+    const f=document.createElement('div');
+    f.className='flower-src'; f.appendChild(photoImg('flower', flowers[i%flowers.length]));
+    addTap(f, ()=>{
+      if(f.classList.contains('used')) return;
+      const empty = holes.find(h=>!h.dataset.full);
+      if(!empty){
+        umiSay('Все лунки заняты! Больше не нужно.');
+        f.classList.add('used'); setTimeout(()=>f.classList.remove('used'),600);
+        return;
+      }
+      empty.dataset.full='1';
+      empty.innerHTML=''; const pl=document.createElement('span'); pl.className='planted';
+      pl.appendChild(photoImg('flower', f.textContent||'🌷')); empty.appendChild(pl);
+      f.classList.add('used');
+      const planted = holes.filter(h=>h.dataset.full).length;
+      umiSay(NUM_WORDS[planted].replace(/^./,c=>c.toUpperCase())+'!', false);
+      if(planted===need) setTimeout(()=>win('g3'),900);
+    });
+    fl.appendChild(f);
+  }
+  umiSay(`Посади ровно ${need} цветка в лунки!`, false);
+}
+
+/* ---------- G4 Река ---------- */
+function initG4(){
+  const target = State.data.level===2 ? 5+Math.floor(Math.random()*3) : 3+Math.floor(Math.random()*2); // 3-4 / 5-7
+  document.getElementById('g4-target-num').textContent=target;
+  const river=document.getElementById('g4-river'); river.innerHTML='';
+  const configs=[];
+  const good = 2+Math.floor(Math.random()*2); // 2-3 верных
+  for(let i=0;i<good;i++) configs.push(target);
+  while(configs.length<5){
+    const d=target+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2));
+    if(d>=1 && d<=9 && d!==target && !configs.includes(d)) configs.push(d);
+  }
+  configs.sort(()=>Math.random()-.5);
+  g4={target, needGood:good, gotGood:0};
+  configs.forEach((dots,i)=>{
+    const leaf=document.createElement('div');
+    leaf.className='leaf'; leaf.dataset.dots=dots;
+    leaf.style.left=(2+i*19)+'%';
+    leaf.style.top=(8+Math.random()*52)+'%';
+    leaf.style.animationDelay=(Math.random()*3)+'s';
+    for(let j=0;j<dots;j++){ const d=document.createElement('div'); d.className='dot'; leaf.appendChild(d); }
+    addTap(leaf, ()=>{
+      if(leaf.classList.contains('chosen')) return;
+      if(+leaf.dataset.dots===g4.target){
+        leaf.classList.add('chosen');
+        g4.gotGood++;
+        umiSay(rnd(['Верно!','Да, этот лист подходит!','Точно!']), false);
+        if(g4.gotGood===g4.needGood) setTimeout(()=>win('g4'),800);
+      } else {
+        fail();
+        leaf.classList.add('wrong-pick');
+        setTimeout(()=>leaf.classList.remove('wrong-pick'),450);
+        umiSay(rnd(OOPS)+' Посчитай точки на листе!');
+      }
+    });
+    river.appendChild(leaf);
+  });
+  umiSay(`Найди листья, где ровно ${target} ${dotWord(target)}!`, false);
+}
+
+/* ---------- G5 Прятки ---------- */
+function initG5(){
+  const digit = 3+Math.floor(Math.random()*3); // 3-5
+  const count = 3+Math.floor(Math.random()*3); // найти 3-5 штук
+  g5={digit, count, found:0};
+  document.getElementById('g5-counter').textContent=`Найди все цифры ${digit}: 0 из ${count}`;
+  const scene=document.getElementById('g5-scene'); scene.innerHTML='';
+  // декор
+  const decor=['🌳','🦋','🌺','🍄','🐞','☁️','🌿','🐌'];
+  for(let i=0;i<10;i++){
+    const d=document.createElement('div');
+    d.textContent=decor[i%decor.length];
+    d.style.cssText=`position:absolute; left:${5+Math.random()*88}%; top:${5+Math.random()*75}%; font-size:${40+Math.random()*40}px; pointer-events:none; opacity:.9;`;
+    scene.appendChild(d);
+  }
+  const placedPos=[];
+  const place=(el)=>{
+    let x,y,t=0;
+    do{ x=6+Math.random()*86; y=8+Math.random()*72; t++; }
+    while(t<80 && (placedPos.some(p=>Math.abs(p.x-x)<11 && Math.abs(p.y-y)<13) || !umiClear(scene,x,y)));
+    placedPos.push({x,y});
+    el.style.left=x+'%'; el.style.top=y+'%';
+    scene.appendChild(el);
+  };
+  for(let i=0;i<count;i++){
+    const el=document.createElement('div');
+    el.className='hidden-digit'; el.textContent=digit; el.dataset.good='1';
+    el.style.color=['#5CB879','#8A5A44','#4AA3D8'][i%3];
+    addTap(el, ()=>{
+      if(el.classList.contains('found')) return;
+      el.classList.add('found');
+      g5.found++;
+      document.getElementById('g5-counter').textContent=`Найди все цифры ${digit}: ${g5.found} из ${g5.count}`;
+      umiSay(rnd(['Нашёл!','Вот она!','Отлично, ещё ищем!']), false);
+      if(g5.found===g5.count) setTimeout(()=>win('g5'),700);
+    });
+    place(el);
+  }
+  // цифры-обманки
+  const decoys=[1,2,6,7,8,9].filter(d=>d!==digit).sort(()=>Math.random()-.5).slice(0,4);
+  decoys.forEach(d=>{
+    const el=document.createElement('div');
+    el.className='hidden-digit decoy'; el.textContent=d;
+    addTap(el, ()=>{
+      el.classList.add('tapped'); setTimeout(()=>el.classList.remove('tapped'),450);
+      umiSay(`Это цифра ${d}, а мы ищем ${digit}!`, false);
+    });
+    place(el);
+  });
+  umiSay(`Цифра ${digit} спряталась! Найди её везде.`, false);
+}
+
+/* ---------- G6 Пазл ---------- */
+function initG6(){
+  const nums=[1,2,3,4].sort(()=>Math.random()-.5).slice(0,3).sort((a,b)=>a-b);
+  const emojis={1:'🍎',2:'🐤',3:'🌸',4:'🐸'};
+  g6={sel:null, matched:0, total:nums.length};
+  const left=document.getElementById('g6-left'), right=document.getElementById('g6-right');
+  left.innerHTML=''; right.innerHTML='';
+  nums.forEach(n=>{
+    const el=document.createElement('div');
+    el.className='pair-item'; el.dataset.pair=n; el.dataset.side='num';
+    el.textContent=n;
+    addTap(el, ()=>g6Pick(el));
+    left.appendChild(el);
+  });
+  [...nums].sort(()=>Math.random()-.5).forEach(n=>{
+    const el=document.createElement('div');
+    el.className='pair-item'; el.dataset.pair=n; el.dataset.side='pic';
+    for(let i=0;i<n;i++){ const s=document.createElement('span'); s.className='mini'; s.textContent=emojis[n]; el.appendChild(s); }
+    addTap(el, ()=>g6Pick(el));
+    right.appendChild(el);
+  });
+  umiSay('Нажми на цифру, а потом на картинку, где столько же!', false);
+}
+function g6Pick(el){
+  if(el.classList.contains('matched')) return;
+  if(!g6.sel){
+    g6.sel=el; el.classList.add('sel'); return;
+  }
+  if(g6.sel===el){ el.classList.remove('sel'); g6.sel=null; return; }
+  if(g6.sel.dataset.side===el.dataset.side){
+    g6.sel.classList.remove('sel'); g6.sel=el; el.classList.add('sel'); return;
+  }
+  if(g6.sel.dataset.pair===el.dataset.pair){
+    g6.sel.classList.remove('sel'); g6.sel.classList.add('matched');
+    el.classList.add('matched');
+    g6.matched++; g6.sel=null;
+    umiSay(rnd(['Пара нашлась!','Верно, совпало!','Молодец!']), false);
+    if(g6.matched===g6.total) setTimeout(()=>win('g6'),700);
+  } else {
+    fail();
+    el.classList.add('mismatch'); g6.sel.classList.add('mismatch');
+    const s=g6.sel;
+    setTimeout(()=>{ el.classList.remove('mismatch'); s.classList.remove('mismatch','sel'); },450);
+    g6.sel=null;
+    umiSay(rnd(OOPS)+' Посчитай предметы на картинке!');
+  }
+}
+
+/* ---------- G7 Считалка ---------- */
+function initG7(){
+  const n = 3+Math.floor(Math.random()*3); // 3-5 персонажей
+  g7={n, next:1, playing:false};
+  document.getElementById('g7-count-big').textContent='?';
+  const box=document.getElementById('g7-critters'); box.innerHTML='';
+  const faces=['🐥','🐰','🐻','🦊','🐸'];
+  for(let i=0;i<n;i++){
+    const c=document.createElement('div');
+    c.className='critter'; c.appendChild(photoImg('critter', faces[i%faces.length])); c.dataset.order=i+1;
+    addTap(c, ()=>{
+      if(c.classList.contains('counted')) return;
+      if(+c.dataset.order===g7.next){
+        c.classList.add('counted'); c.classList.remove('next');
+        document.getElementById('g7-count-big').textContent=g7.next;
+        speak(String(g7.next));
+        g7.next++;
+        markNextCritter();
+        if(g7.next>g7.n) setTimeout(()=>win('g7'),800);
+      } else {
+        fail();
+        c.classList.add('mismatch'); setTimeout(()=>c.classList.remove('mismatch'),450);
+        umiSay('Считаем по порядку! Начни с первого.', false);
+      }
+    });
+    box.appendChild(c);
+  }
+  markNextCritter();
+  umiSay('Послушай считалку, а потом посчитай зверят по порядку!', false);
+}
+function markNextCritter(){
+  document.querySelectorAll('.critter').forEach(c=>{
+    c.classList.toggle('next', +c.dataset.order===g7.next);
+  });
+}
+addTap(document.getElementById('btn-play-song'), ()=>{
+  if(g7.playing) return;
+  g7.playing=true;
+  const words=['Раз','два','три','четыре','пять'].slice(0,g7.n);
+  const tail='— зверята, выходи играть!';
+  umiSay(words.join(', ')+' '+tail);
+  setTimeout(()=>{ g7.playing=false; }, g7.n*900+1500);
+});
+
+/* ---------- Родительские ворота ---------- */
+const gateOverlay=document.getElementById('gate-overlay');
+const gateHold=document.getElementById('gate-hold');
+const gateFill=document.getElementById('gate-fill');
+let gateTimer=null, gateStart=0;
+addTap(document.getElementById('btn-parents'), ()=>{
+  gateOverlay.classList.add('show');
+  gateFill.style.width='0%';
+});
+addTap(document.getElementById('gate-cancel'), ()=>gateOverlay.classList.remove('show'));
+function gateDown(e){
+  e.preventDefault();
+  gateStart=Date.now();
+  gateTimer=setInterval(()=>{
+    const pct=Math.min(100,(Date.now()-gateStart)/3000*100);
+    gateFill.style.width=pct+'%';
+    if(pct>=100){
+      clearInterval(gateTimer); gateTimer=null;
+      gateOverlay.classList.remove('show');
+      openParents();
+    }
+  },50);
+}
+function gateUp(){
+  if(gateTimer){ clearInterval(gateTimer); gateTimer=null; }
+  gateFill.style.width='0%';
+}
+gateHold.addEventListener('mousedown',gateDown);
+gateHold.addEventListener('touchstart',gateDown,{passive:false});
+gateHold.addEventListener('mouseup',gateUp); gateHold.addEventListener('mouseleave',gateUp); gateHold.addEventListener('touchend',gateUp);
+
+function openParents(){
+  document.getElementById('p-stars').textContent=State.data.stars;
+  document.getElementById('p-plays').textContent=State.data.plays;
+  document.getElementById('p-level').textContent=State.data.level;
+  document.getElementById('p-session-min').value=State.data.sessionMin;
+  document.getElementById('p-day-min').value=State.data.dayMin;
+  const grid=document.getElementById('p-grid'); grid.innerHTML='';
+  const learned=new Set();
+  Object.keys(State.data.gameStars).forEach(g=>{
+    const map={g1:[1,2,3,4,5],g2:[1,2,3,4],g3:[2,3,4,5,6],g4:[3,4,5,6,7],g5:[3,4,5],g6:[1,2,3,4],g7:[3,4,5]};
+    (map[g]||[]).forEach(n=>learned.add(n));
+  });
+  for(let n=1;n<=10;n++){
+    const c=document.createElement('div');
+    c.className='prog-cell'+(learned.has(n)?' ok':'');
+    c.textContent=n;
+    grid.appendChild(c);
+  }
+  show('parents');
+}
+addTap(document.getElementById('btn-close-parents'), ()=>{
+  State.data.sessionMin=+document.getElementById('p-session-min').value||15;
+  State.data.dayMin=+document.getElementById('p-day-min').value||30;
+  State.save();
+  show('map');
+});
+addTap(document.getElementById('btn-reset-progress'), ()=>{
+  localStorage.removeItem('chislyata');
+  State.data={stars:0,plays:0,level:1,gameStars:{},unlocked:[1],streak:0,failStreak:0,sessionMin:15,dayMin:30};
+  renderStars(); openParents();
+});
+
+/* ================= ОСТРОВА 3–5: РЕЕСТР И ДВИЖКИ ================= */
+const GAME_CFG = {
+  g8:  {engine:'harvest', title:'Сбор шишек 🌰', item:'🌰', photo:'pinecone', min:5, max:6, min2:6, max2:8, moving2:true,
+        intro:'Белка разбросала шишки! Собери их все.'},
+  g9:  {engine:'hide', title:'Прятки+ 🌲', digits:[5,6], countMin:5, countMax:7, decoys:[4,7,9], hint69:true,
+        intro:'Цифры спрятались в лесу! Найди их всех.'},
+  g10: {engine:'trace', title:'Песчаные 5 и 6 ✏️', digits:[5,6]},
+  g11: {engine:'garden', title:'Камни в кратерах 🌋', item:'🪨', photo:'stone', min:7, max:8, min2:8, max2:9,
+        intro:'Вулкан просит камни! Положи ровно столько, сколько написано.'},
+  g12: {engine:'harvest', title:'Летящие искры ✨', item:'✨', photo:'spark', min:7, max:8, min2:8, max2:10, moving:true,
+        intro:'Искры летят из вулкана! Поймай их всех.'},
+  g13: {engine:'trace', title:'Песчаные 7 и 8 ✏️', digits:[7,8]},
+  g14: {engine:'constellation', title:'Созвездия ⭐', min:9, max:10,
+        intro:'Соедини звёзды по порядку — получится созвездие!'},
+  g15: {engine:'pairs', title:'Пары 6–10 🧩', nums:[6,7,8,9,10], count:4,
+        intro:'Соедини цифру и картинку, где столько же!'},
+  g16: {engine:'marathon', title:'Звёздный марафон 🏆', rounds:5,
+        intro:'Финальное испытание! 5 быстрых заданий подряд. Ты справишься!'},
+};
+const ENG = {};
+function body(id){ return document.querySelector('#'+id+' .g-body'); }
+function setTitle(id){ document.querySelector('#'+id+' .game-title').textContent = GAME_CFG[id].title; }
+function engineStart(id){
+  const cfg = GAME_CFG[id];
+  setTitle(id);
+  ({harvest:engHarvest, hide:engHide, trace:engTrace, garden:engGarden,
+    constellation:engConst, pairs:engPairs, marathon:engMarathon}[cfg.engine])(id, cfg);
+}
+
+/* --- Движок: сбор предметов и выбор цифры (G8, G12) --- */
+function engHarvest(id, cfg){
+  const lvl = State.data.level;
+  const lo = lvl===2 ? (cfg.min2??cfg.min) : cfg.min;
+  const hi = lvl===2 ? (cfg.max2??cfg.max) : cfg.max;
+  const total = lo + Math.floor(Math.random()*(hi-lo+1));
+  const moving = cfg.moving || (lvl===2 && cfg.moving2);
+  ENG[id] = {total, picked:0};
+  const b = body(id);
+  b.innerHTML = `
+    <div class="gx-target">${cfg.intro}</div>
+    <div class="gx-field" style="position:absolute; left:50%; top:70px; transform:translateX(-50%); width:min(680px,94vw); height:52%;"></div>
+    <div class="gx-basket"><div class="cnt" data-role="cnt">0</div><div data-role="minis" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div></div>
+    <div class="gx-answers" data-role="answers"></div>`;
+  const field = b.querySelector('.gx-field');
+  const placed = [];
+  for(let i=0;i<total;i++){
+    let x,y,t=0;
+    do{ x=4+Math.random()*84; y=4+Math.random()*80; t++; }
+    while(t<60 && placed.some(p=>Math.hypot(p.x-x,p.y-y)<16));
+    placed.push({x,y});
+    const it = document.createElement('div');
+    it.className='gx-item'+(moving?' moving':'');
+    it.appendChild(photoImg(cfg.photo, cfg.item));
+    it.style.left=x+'%'; it.style.top=y+'%';
+    if(moving) it.style.animationDelay=(Math.random()*2)+'s';
+    addTap(it, ()=>{
+      if(it.classList.contains('collected')) return;
+      it.classList.add('collected');
+      const st = ENG[id]; st.picked++;
+      setTimeout(()=>{
+        it.style.display='none';
+        const minis=b.querySelector('[data-role="minis"]');
+        const m=document.createElement('span'); m.className='mini'; m.appendChild(photoImg(cfg.photo, cfg.item));
+        minis.appendChild(m);
+        b.querySelector('[data-role="cnt"]').textContent=st.picked;
+        speak(String(st.picked));
+        if(st.picked===st.total) setTimeout(()=>engAsk(id,cfg), 900);
+      }, 520);
+    });
+    field.appendChild(it);
+  }
+  umiSay(cfg.intro);
+}
+function engAsk(id, cfg){
+  const st = ENG[id];
+  const box = body(id).querySelector('[data-role="answers"]');
+  box.innerHTML='';
+  const opts=new Set([st.total]);
+  while(opts.size<3){
+    const d=st.total+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2));
+    if(d>=1&&d<=10) opts.add(d);
+  }
+  [...opts].sort(()=>Math.random()-.5).forEach(n=>{
+    const btn=document.createElement('button');
+    btn.className='num-btn'; btn.textContent=n; btn.dataset.n=n;
+    addTap(btn, ()=>{
+      if(n===st.total){ box.classList.remove('show'); win(id); }
+      else{
+        fail();
+        btn.classList.add('wrong'); setTimeout(()=>btn.classList.remove('wrong'),450);
+        umiSay(rnd(OOPS)+' Давай посчитаем ещё раз!');
+        const minis=[...body(id).querySelectorAll('[data-role="minis"] .mini')];
+        minis.forEach((m,i)=>{
+          setTimeout(()=>{ m.style.textShadow='0 0 14px #FFC94D'; speak(String(i+1));
+            setTimeout(()=>m.style.textShadow='',650); }, i*800);
+        });
+        setTimeout(()=>{
+          box.querySelectorAll('.num-btn').forEach(x=>{ if(+x.dataset.n===st.total) x.classList.add('hint'); });
+        }, minis.length*800+300);
+      }
+    });
+    box.appendChild(btn);
+  });
+  box.classList.add('show');
+  umiSay('Сколько мы собрали? Выбери цифру!');
+}
+
+/* --- Движок: прятки (G9) --- */
+function engHide(id, cfg){
+  const digit = cfg.digits[Math.floor(Math.random()*cfg.digits.length)];
+  const count = cfg.countMin + Math.floor(Math.random()*(cfg.countMax-cfg.countMin+1));
+  ENG[id] = {digit, count, found:0};
+  const b = body(id);
+  b.innerHTML = `
+    <div class="gx-target" data-role="counter"></div>
+    <div class="gx-scene" style="position:absolute; inset:50px 0 0 0;"></div>`;
+  const counter = b.querySelector('[data-role="counter"]');
+  const upd = f=>counter.innerHTML=`Найди все цифры <b>${digit}</b>: ${f} из ${count}`;
+  upd(0);
+  const scene = b.querySelector('.gx-scene');
+  const decor=['🌲','🍄','🦔','🌿','🐿️','🌳','🍂','🦉'];
+  for(let i=0;i<12;i++){
+    const d=document.createElement('div');
+    d.textContent=decor[i%decor.length];
+    d.style.cssText=`position:absolute; left:${4+Math.random()*88}%; top:${2+Math.random()*78}%; font-size:${34+Math.random()*34}px; pointer-events:none;`;
+    scene.appendChild(d);
+  }
+  const placedPos=[];
+  const place=el=>{
+    let x,y,t=0;
+    do{ x=5+Math.random()*86; y=5+Math.random()*74; t++; }
+    while(t<80 && (placedPos.some(p=>Math.abs(p.x-x)<11 && Math.abs(p.y-y)<13) || !umiClear(scene,x,y)));
+    placedPos.push({x,y});
+    el.style.left=x+'%'; el.style.top=y+'%';
+    scene.appendChild(el);
+  };
+  for(let i=0;i<count;i++){
+    const el=document.createElement('div');
+    el.className='hidden-digit'; el.dataset.good='1'; el.textContent=digit;
+    el.style.color=['#3E7A52','#8A5A44','#5560B8'][i%3];
+    addTap(el, ()=>{
+      if(el.classList.contains('found')) return;
+      el.classList.add('found');
+      const st=ENG[id]; st.found++; upd(st.found);
+      umiSay(rnd(['Нашёл!','Вот она!','Здорово, ищем дальше!']));
+      if(st.found===st.count) setTimeout(()=>win(id),700);
+    });
+    place(el);
+  }
+  cfg.decoys.slice(0,4).forEach(d=>{
+    const el=document.createElement('div');
+    el.className='hidden-digit decoy'; el.textContent=d;
+    addTap(el, ()=>{
+      el.classList.add('tapped'); setTimeout(()=>el.classList.remove('tapped'),450);
+      if(cfg.hint69 && (d===9||d===6) && (digit===6||digit===5))
+        umiSay(`Это ${d}! Смотри: у 6 кружок внизу, у 9 — вверху. Мы ищем ${digit}!`);
+      else
+        umiSay(`Это цифра ${d}, а мы ищем ${digit}!`);
+    });
+    place(el);
+  });
+  umiSay(cfg.intro+` Ищем цифру ${digit}!`);
+}
+
+/* --- Движок: обведение (G10, G13) --- */
+function engTrace(id, cfg){
+  const digit = cfg.digits[Math.floor(Math.random()*cfg.digits.length)];
+  const b = body(id);
+  b.innerHTML = `
+    <canvas class="gx-canvas" width="560" height="560"
+      style="position:absolute; left:50%; top:110px; transform:translateX(-50%); background:#E8C89A; border:8px solid #B98A5A; border-radius:36px; width:min(560px,88vw); height:min(560px,88vw);"></canvas>
+    <div style="position:absolute; bottom:30px; width:100%; display:flex; gap:20px; justify-content:center; align-items:center;">
+      <div id="trace-progress-wrap" style="width:min(340px,44vw);"><div class="gx-prog" style="height:100%; width:0%; background:linear-gradient(90deg,var(--gold),#FFB347); transition:width .2s; border-radius:20px;"></div></div>
+      <button class="big-btn" data-role="clear">Стереть 🧽</button>
+    </div>`;
+  const cvs=b.querySelector('.gx-canvas'), ctx=cvs.getContext('2d');
+  const T={digit, cvs, ctx, points:[], covered:new Set(), drawing:false, done:false, last:null};
+  ENG[id]=T;
+  function draw(){
+    ctx.clearRect(0,0,560,560);
+    ctx.fillStyle='#E8C89A'; ctx.fillRect(0,0,560,560);
+    for(let i=0;i<400;i++){ ctx.fillStyle=`rgba(140,100,60,${Math.random()*.15})`; ctx.beginPath(); ctx.arc(Math.random()*560,Math.random()*560,Math.random()*2.2,0,7); ctx.fill(); }
+    ctx.font='900 460px Nunito, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.strokeStyle='rgba(138,90,68,.45)'; ctx.lineWidth=16; ctx.setLineDash([4,14]);
+    ctx.strokeText(String(digit),280,300); ctx.setLineDash([]);
+    const off=document.createElement('canvas'); off.width=off.height=560;
+    const octx=off.getContext('2d');
+    octx.font='900 460px Nunito, sans-serif'; octx.textAlign='center'; octx.textBaseline='middle';
+    octx.fillText(String(digit),280,300);
+    const data=octx.getImageData(0,0,560,560).data;
+    T.points=[];
+    for(let y=0;y<560;y+=12) for(let x=0;x<560;x+=12)
+      if(data[(y*560+x)*4+3]>100) T.points.push([x,y]);
+    T.total=T.points.length;
+  }
+  draw();
+  function pos(e){
+    const r=cvs.getBoundingClientRect();
+    const t=(e.touches&&e.touches[0])||e;
+    return [(t.clientX-r.left)*(560/r.width),(t.clientY-r.top)*(560/r.height)];
+  }
+  function move(e){
+    if(!T.drawing||T.done) return;
+    e.preventDefault();
+    const [x,y]=pos(e);
+    ctx.strokeStyle='#B85B3E'; ctx.lineWidth=34; ctx.lineCap='round';
+    if(T.last){ ctx.beginPath(); ctx.moveTo(T.last[0],T.last[1]); ctx.lineTo(x,y); ctx.stroke(); }
+    T.last=[x,y];
+    T.points.forEach((p,i)=>{ if(!T.covered.has(i)&&Math.hypot(p[0]-x,p[1]-y)<26) T.covered.add(i); });
+    const pct=T.total?Math.round(T.covered.size/T.total*100):0;
+    b.querySelector('.gx-prog').style.width=pct+'%';
+    if(pct>=85&&!T.done){
+      T.done=true;
+      umiSay('Какая красивая цифра '+digit+'!');
+      setTimeout(()=>win(id),900);
+    }
+  }
+  cvs.onmousedown=()=>{T.drawing=true;T.last=null;};
+  cvs.onmousemove=move;
+  window.addEventListener('mouseup',()=>T.drawing=false);
+  cvs.ontouchstart=()=>{T.drawing=true;T.last=null;};
+  cvs.ontouchmove=move;
+  cvs.ontouchend=()=>T.drawing=false;
+  addTap(b.querySelector('[data-role="clear"]'), ()=>{
+    T.covered.clear(); T.done=false; draw();
+    b.querySelector('.gx-prog').style.width='0%';
+    umiSay('Стираем и пробуем снова!');
+  });
+  umiSay(`Обведи цифру ${digit} пальчиком по песку!`);
+}
+
+/* --- Движок: лунки (G11) --- */
+function engGarden(id, cfg){
+  const lvl=State.data.level;
+  const lo=lvl===2?(cfg.min2??cfg.min):cfg.min, hi=lvl===2?(cfg.max2??cfg.max):cfg.max;
+  const need=lo+Math.floor(Math.random()*(hi-lo+1));
+  const b=body(id);
+  b.innerHTML=`
+    <div class="gx-target">${cfg.intro}<br>Положи <b>${need}</b>!</div>
+    <div class="gx-holes" data-role="holes"></div>
+    <div class="gx-items-row" data-role="items"></div>`;
+  const holes=[];
+  const holesBox=b.querySelector('[data-role="holes"]');
+  for(let i=0;i<need;i++){
+    const h=document.createElement('div'); h.className='hole';
+    addTap(h, ()=>umiSay('Сначала выбери камень внизу!'));
+    holesBox.appendChild(h); holes.push(h);
+  }
+  const itemsBox=b.querySelector('[data-role="items"]');
+  for(let i=0;i<need+2;i++){
+    const f=document.createElement('div');
+    f.className='gx-src'; f.appendChild(photoImg(cfg.photo, cfg.item));
+    addTap(f, ()=>{
+      if(f.classList.contains('used')) return;
+      const empty=holes.find(h=>!h.dataset.full);
+      if(!empty){ umiSay('Все кратеры заполнены! Больше не нужно.'); return; }
+      empty.dataset.full='1';
+      empty.innerHTML=''; const pl=document.createElement('span'); pl.className='planted';
+      pl.appendChild(photoImg(cfg.photo, cfg.item)); empty.appendChild(pl);
+      f.classList.add('used');
+      const n=holes.filter(h=>h.dataset.full).length;
+      speak(String(n));
+      if(n===need) setTimeout(()=>win(id),900);
+    });
+    itemsBox.appendChild(f);
+  }
+  umiSay(cfg.intro+` Нужно ровно ${need}!`);
+}
+
+/* --- Движок: созвездия (G14) --- */
+function engConst(id, cfg){
+  const n=cfg.min+Math.floor(Math.random()*(cfg.max-cfg.min+1)); // 9-10 звёзд
+  const b=body(id);
+  b.innerHTML=`
+    <div class="gx-target">${cfg.intro}</div>
+    <svg id="const-wrap" width="560" height="560" viewBox="0 0 560 560">
+      <g data-role="lines"></g><g data-role="stars"></g>
+    </svg>`;
+  const wrap=b.querySelector('#const-wrap');
+  const linesG=wrap.querySelector('[data-role="lines"]');
+  const starsG=wrap.querySelector('[data-role="stars"]');
+  const pts=[]; let tries=0;
+  while(pts.length<n && tries<500){
+    tries++;
+    const x=50+Math.random()*460, y=50+Math.random()*460;
+    if(pts.every(p=>Math.hypot(p.x-x,p.y-y)>85)) pts.push({x,y});
+  }
+  ENG[id]={next:1, total:n};
+  pts.forEach((p,i)=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','cstar'); g.dataset.order=i+1;
+    g.innerHTML=`<circle class="halo" cx="${p.x}" cy="${p.y}" r="34"/>
+      <circle cx="${p.x}" cy="${p.y}" r="12" fill="#FFC94D"/>
+      <text x="${p.x}" y="${p.y-20}" text-anchor="middle">${i+1}</text>`;
+    addTap(g, ()=>{
+      const st=ENG[id];
+      if(+g.dataset.order===st.next){
+        g.classList.add('done'); g.classList.remove('next');
+        if(st.next>1){
+          const prev=pts[st.next-2];
+          const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+          ln.setAttribute('x1',prev.x); ln.setAttribute('y1',prev.y);
+          ln.setAttribute('x2',p.x); ln.setAttribute('y2',p.y);
+          ln.setAttribute('stroke','#FFC94D'); ln.setAttribute('stroke-width','5'); ln.setAttribute('stroke-linecap','round');
+          linesG.appendChild(ln);
+        }
+        speak(String(st.next));
+        st.next++;
+        markNext();
+        if(st.next>st.total){
+          umiSay('Созвездие готово! Какая красота!');
+          setTimeout(()=>win(id),1000);
+        }
+      } else {
+        fail();
+        g.classList.add('done'); setTimeout(()=>g.classList.remove('done'),300);
+        umiSay(`Соединяем по порядку! Ищи цифру ${st.next}.`);
+      }
+    });
+    starsG.appendChild(g);
+  });
+  function markNext(){
+    const st=ENG[id];
+    starsG.querySelectorAll('.cstar').forEach(c=>c.classList.toggle('next', +c.dataset.order===st.next));
+  }
+  markNext();
+  umiSay(cfg.intro+` Начни с цифры 1!`);
+}
+
+/* --- Движок: пары (G15) --- */
+function engPairs(id, cfg){
+  const nums=[...cfg.nums].sort(()=>Math.random()-.5).slice(0,cfg.count).sort((a,b)=>a-b);
+  const emojis={6:'🐞',7:'🌈',8:'🐙',9:'🎈',10:'⭐'};
+  const b=body(id);
+  b.innerHTML=`
+    <div class="gx-target">${cfg.intro}</div>
+    <div style="position:absolute; inset:70px 0 0 0; display:flex; justify-content:center; gap:min(120px,8vw); padding-top:20px;">
+      <div class="g6-col" data-role="left"></div>
+      <div class="g6-col" data-role="right"></div>
+    </div>`;
+  const P={sel:null, matched:0, total:nums.length};
+  ENG[id]=P;
+  const left=b.querySelector('[data-role="left"]'), right=b.querySelector('[data-role="right"]');
+  nums.forEach(nn=>{
+    const el=document.createElement('div');
+    el.className='pair-item'; el.dataset.pair=nn; el.dataset.side='num'; el.textContent=nn;
+    addTap(el, ()=>pick(el));
+    left.appendChild(el);
+  });
+  [...nums].sort(()=>Math.random()-.5).forEach(nn=>{
+    const el=document.createElement('div');
+    el.className='pair-item'; el.dataset.pair=nn; el.dataset.side='pic';
+    const em=emojis[nn]||'🎁';
+    for(let i=0;i<nn;i++){ const s=document.createElement('span'); s.className='mini'; s.textContent=em; el.appendChild(s); }
+    addTap(el, ()=>pick(el));
+    right.appendChild(el);
+  });
+  function pick(el){
+    if(el.classList.contains('matched')) return;
+    if(!P.sel){ P.sel=el; el.classList.add('sel'); return; }
+    if(P.sel===el){ el.classList.remove('sel'); P.sel=null; return; }
+    if(P.sel.dataset.side===el.dataset.side){ P.sel.classList.remove('sel'); P.sel=el; el.classList.add('sel'); return; }
+    if(P.sel.dataset.pair===el.dataset.pair){
+      P.sel.classList.remove('sel'); P.sel.classList.add('matched'); el.classList.add('matched');
+      P.matched++; P.sel=null;
+      umiSay(rnd(['Пара нашлась!','Верно!','Молодец!']));
+      if(P.matched===P.total) setTimeout(()=>win(id),700);
+    } else {
+      fail();
+      el.classList.add('mismatch'); P.sel.classList.add('mismatch');
+      const s=P.sel;
+      setTimeout(()=>{ el.classList.remove('mismatch'); s.classList.remove('mismatch','sel'); },450);
+      P.sel=null;
+      umiSay(rnd(OOPS)+' Посчитай предметы!');
+    }
+  }
+  umiSay(cfg.intro);
+}
+
+/* --- Движок: марафон (G16) --- */
+function engMarathon(id, cfg){
+  ENG[id]={round:1, rounds:cfg.rounds, type:null, answer:null, needGood:0, gotGood:0};
+  marathonRound(id, cfg);
+}
+function marathonRound(id, cfg){
+  const st=ENG[id];
+  const b=body(id);
+  const type=['count','dots','hide'][Math.floor(Math.random()*3)];
+  st.type=type; st.gotGood=0;
+  let html=`<div id="marathon-hud">🏆 Марафон: раунд <b data-role="r">${st.round}</b> из ${cfg.rounds}</div><div class="m-round">`;
+  if(type==='count'){
+    const n=1+Math.floor(Math.random()*10);
+    st.answer=n;
+    const em=['🍎','🐤','🌸','🐸','🦋','🐞','🎈','⭐'][Math.floor(Math.random()*8)];
+    html+=`<div class="gx-target">Сколько предметов? Выбери цифру!</div><div class="m-items">`;
+    for(let i=0;i<n;i++) html+=`<span>${em}</span>`;
+    html+=`</div><div class="m-answers" data-role="ans">`;
+    const opts=new Set([n]);
+    while(opts.size<3){ const d=n+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2)); if(d>=1&&d<=10) opts.add(d); }
+    [...opts].sort(()=>Math.random()-.5).forEach(v=>{ html+=`<button class="num-btn" data-n="${v}">${v}</button>`; });
+    html+=`</div>`;
+  } else if(type==='dots'){
+    const t=3+Math.floor(Math.random()*6); // 3-8
+    st.answer=t; st.needGood=2;
+    html+=`<div class="gx-target">Найди <b>2</b> листа, где ровно <b>${t}</b> ${dotWord(t)}!</div>
+      <div class="m-items" data-role="leaves" style="top:90px;">`;
+    const ds=[t,t];
+    while(ds.length<4){ const d=t+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*2)); if(d>=1&&d<=9&&d!==t&&!ds.includes(d)) ds.push(d); }
+    ds.sort(()=>Math.random()-.5).forEach(v=>{
+      html+=`<div class="m-leaf" data-dots="${v}">${'<div class="dot"></div>'.repeat(v)}</div>`;
+    });
+    html+=`</div>`;
+  } else {
+    const digit=1+Math.floor(Math.random()*10);
+    st.answer=digit; st.needGood=3;
+    html+=`<div class="gx-target">Найди <b>3</b> цифры <b>${digit}</b>!</div><div class="m-hide-scene" data-role="scene"></div>`;
+  }
+  html+=`</div>`;
+  b.innerHTML=html;
+  if(type==='count'){
+    b.querySelectorAll('[data-role="ans"] .num-btn').forEach(btn=>{
+      addTap(btn, ()=>{
+        if(+btn.dataset.n===st.answer){ marathonOk(id,cfg); }
+        else{
+          fail();
+          btn.classList.add('wrong'); setTimeout(()=>btn.classList.remove('wrong'),450);
+          umiSay(rnd(OOPS)+' Посчитай ещё раз!');
+          b.querySelectorAll('[data-role="ans"] .num-btn').forEach(x=>{ if(+x.dataset.n===st.answer) x.classList.add('hint'); });
+        }
+      });
+    });
+    umiSay(`Раунд ${st.round}! Сколько предметов?`);
+  } else if(type==='dots'){
+    b.querySelectorAll('.m-leaf').forEach(leaf=>{
+      addTap(leaf, ()=>{
+        if(leaf.classList.contains('chosen')) return;
+        if(+leaf.dataset.dots===st.answer){
+          leaf.classList.add('chosen'); st.gotGood++;
+          speak(String(st.gotGood));
+          if(st.gotGood>=st.needGood) marathonOk(id,cfg);
+        } else {
+          fail();
+          leaf.classList.add('wrong-pick'); setTimeout(()=>leaf.classList.remove('wrong-pick'),450);
+          umiSay(rnd(OOPS)+' Посчитай точки!');
+        }
+      });
+    });
+    umiSay(`Раунд ${st.round}! Найди 2 листа с ${st.answer} ${dotWord(st.answer)}!`);
+  } else {
+    const scene=b.querySelector('[data-role="scene"]');
+    const decor=['🌟','☁️','🌙','✨','🪐'];
+    for(let i=0;i<10;i++){
+      const d=document.createElement('div');
+      d.textContent=decor[i%decor.length];
+      d.style.cssText=`position:absolute; left:${5+Math.random()*88}%; top:${Math.random()*75}%; font-size:${30+Math.random()*30}px; pointer-events:none;`;
+      scene.appendChild(d);
+    }
+    const placedPos=[];
+    const place=el=>{
+      let x,y,t=0;
+      do{ x=6+Math.random()*86; y=5+Math.random()*70; t++; }
+      while(t<80 && (placedPos.some(p=>Math.abs(p.x-x)<11 && Math.abs(p.y-y)<13) || !umiClear(scene,x,y)));
+      placedPos.push({x,y});
+      el.style.left=x+'%'; el.style.top=y+'%';
+      scene.appendChild(el);
+    };
+    for(let i=0;i<3;i++){
+      const el=document.createElement('div');
+      el.className='hidden-digit'; el.dataset.good='1'; el.textContent=st.answer;
+      el.style.color='#5560B8';
+      addTap(el, ()=>{
+        if(el.classList.contains('found')) return;
+        el.classList.add('found'); st.gotGood++;
+        speak(String(st.gotGood));
+        if(st.gotGood>=3) marathonOk(id,cfg);
+      });
+      place(el);
+    }
+    [1,2,3,4,5,6,7,8,9,10].filter(d=>d!==st.answer).sort(()=>Math.random()-.5).slice(0,4).forEach(d=>{
+      const el=document.createElement('div');
+      el.className='hidden-digit decoy'; el.textContent=d;
+      addTap(el, ()=>{
+        el.classList.add('tapped'); setTimeout(()=>el.classList.remove('tapped'),450);
+        umiSay(`Это ${d}, а мы ищем ${st.answer}!`);
+      });
+      place(el);
+    });
+    umiSay(`Раунд ${st.round}! Найди три цифры ${st.answer}!`);
+  }
+}
+function marathonOk(id, cfg){
+  const st=ENG[id];
+  umiSay(rnd(['Раунд пройден!','Так держать!','Отлично, дальше!']));
+  setTimeout(()=>{
+    if(st.round>=cfg.rounds){
+      // финальная церемония
+      document.getElementById('win-text').textContent='🏆 Ты прошёл Звёздный марафон! Ты знаешь все цифры!';
+      umiSay('Ура! Ты настоящий чемпион цифр! Все острова гордятся тобой!');
+      State.addStar();
+      State.data.gameStars[id]=(State.data.gameStars[id]||0)+1;
+      State.save(); renderStars();
+      confetti(); setTimeout(confetti,700); setTimeout(confetti,1400);
+      document.getElementById('win-overlay').classList.add('show');
+    } else {
+      st.round++;
+      marathonRound(id,cfg);
+    }
+  }, 1100);
+}
+
+/* ---------- INIT ---------- */
+initPhotos();
+renderStars();
+</script>
+</body>
+</html>
